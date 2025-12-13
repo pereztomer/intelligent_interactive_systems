@@ -368,50 +368,9 @@ function RecordingsPage({ onBack }) {
   const [loading, setLoading] = useState(true)
   const [selectedRecording, setSelectedRecording] = useState(null)
   const [analyzing, setAnalyzing] = useState({}) // Track which recordings are being analyzed
-  const [pyodide, setPyodide] = useState(null) // Pyodide instance
 
   useEffect(() => {
     loadRecordings()
-    
-    // Dynamically load Pyodide using script tag
-    const loadPyodide = async () => {
-      try {
-        // Check if Pyodide is already loaded
-        if (window.loadPyodide) {
-          const pyodideInstance = await window.loadPyodide({
-            indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.1/full/",
-          })
-          setPyodide(pyodideInstance)
-          return
-        }
-
-        // Load Pyodide script dynamically
-        const script = document.createElement('script')
-        script.src = "https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"
-        script.async = true
-        
-        script.onload = async () => {
-          try {
-            const pyodideInstance = await window.loadPyodide({
-              indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.1/full/",
-            })
-            setPyodide(pyodideInstance)
-          } catch (err) {
-            console.error('Error initializing Pyodide:', err)
-          }
-        }
-        
-        script.onerror = (err) => {
-          console.error('Error loading Pyodide script:', err)
-        }
-        
-        document.head.appendChild(script)
-      } catch (err) {
-        console.error('Error loading Pyodide:', err)
-      }
-    }
-    
-    loadPyodide()
   }, [])
 
   const loadRecordings = async () => {
@@ -564,9 +523,9 @@ function RecordingsPage({ onBack }) {
                         e.stopPropagation()
                         handleAnalyze(recording.id)
                       }}
-                      disabled={analyzing[recording.id] || !pyodide}
+                      disabled={analyzing[recording.id]}
                     >
-                      {!pyodide ? 'Loading Python...' : analyzing[recording.id] ? 'Analyzing...' : 'Analyze'}
+                      {analyzing[recording.id] ? 'Analyzing...' : 'Analyze'}
                     </button>
                     <button
                       className="delete-button"

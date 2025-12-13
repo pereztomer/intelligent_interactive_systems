@@ -373,39 +373,18 @@ function RecordingsPage({ onBack }) {
   useEffect(() => {
     loadRecordings()
     
-    // Dynamically load Pyodide using script tag
+    // Dynamically load Pyodide
     const loadPyodide = async () => {
       try {
-        // Check if Pyodide is already loaded
-        if (window.loadPyodide) {
-          const pyodideInstance = await window.loadPyodide({
-            indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.1/full/",
-          })
-          setPyodide(pyodideInstance)
-          return
-        }
-
-        // Load Pyodide script dynamically
-        const script = document.createElement('script')
-        script.src = "https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"
-        script.async = true
+        const pyodideModule = await import(
+          "https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"
+        )
         
-        script.onload = async () => {
-          try {
-            const pyodideInstance = await window.loadPyodide({
-              indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.1/full/",
-            })
-            setPyodide(pyodideInstance)
-          } catch (err) {
-            console.error('Error initializing Pyodide:', err)
-          }
-        }
+        const pyodideInstance = await pyodideModule.loadPyodide({
+          indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.1/full/",
+        })
         
-        script.onerror = (err) => {
-          console.error('Error loading Pyodide script:', err)
-        }
-        
-        document.head.appendChild(script)
+        setPyodide(pyodideInstance)
       } catch (err) {
         console.error('Error loading Pyodide:', err)
       }

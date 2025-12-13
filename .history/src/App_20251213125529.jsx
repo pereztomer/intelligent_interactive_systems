@@ -4,6 +4,7 @@ import 'react-pdf/dist/esm/Page/AnnotationLayer.css'
 import 'react-pdf/dist/esm/Page/TextLayer.css'
 import './App.css'
 import { saveRecording } from './utils/recordingStorage'
+import { loadPyodide } from 'pyodide'
 
 // Set up PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`
@@ -368,50 +369,9 @@ function RecordingsPage({ onBack }) {
   const [loading, setLoading] = useState(true)
   const [selectedRecording, setSelectedRecording] = useState(null)
   const [analyzing, setAnalyzing] = useState({}) // Track which recordings are being analyzed
-  const [pyodide, setPyodide] = useState(null) // Pyodide instance
 
   useEffect(() => {
     loadRecordings()
-    
-    // Dynamically load Pyodide using script tag
-    const loadPyodide = async () => {
-      try {
-        // Check if Pyodide is already loaded
-        if (window.loadPyodide) {
-          const pyodideInstance = await window.loadPyodide({
-            indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.1/full/",
-          })
-          setPyodide(pyodideInstance)
-          return
-        }
-
-        // Load Pyodide script dynamically
-        const script = document.createElement('script')
-        script.src = "https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"
-        script.async = true
-        
-        script.onload = async () => {
-          try {
-            const pyodideInstance = await window.loadPyodide({
-              indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.1/full/",
-            })
-            setPyodide(pyodideInstance)
-          } catch (err) {
-            console.error('Error initializing Pyodide:', err)
-          }
-        }
-        
-        script.onerror = (err) => {
-          console.error('Error loading Pyodide script:', err)
-        }
-        
-        document.head.appendChild(script)
-      } catch (err) {
-        console.error('Error loading Pyodide:', err)
-      }
-    }
-    
-    loadPyodide()
   }, [])
 
   const loadRecordings = async () => {
@@ -460,9 +420,11 @@ function RecordingsPage({ onBack }) {
         throw new Error('Recording not found')
       }
 
-      // Wait for Pyodide to load if not ready
-      if (!pyodide) {
-        throw new Error('Pyodide is still loading. Please wait a moment and try again.')
+      // Load Pyodide if not already loaded
+      if (!window.pyodide) {
+        window.pyodide = await loadPyodide({
+          indexURL: "https://cdn.jsdelivr.net/pyodide/v0.24.1/full/"
+        })
       }
 
       // Load the Python file from public folder
@@ -470,18 +432,18 @@ function RecordingsPage({ onBack }) {
       const pythonCode = await pythonFileResponse.text()
       
       // Run the Python code to define the function
-      pyodide.runPython(pythonCode)
+      window.pyodide.runPython(pythonCode)
       
       // Get video and PDF data from recording
       const videoData = recording.videoData || ''
       const presentationData = recording.pdfData || ''
       
       // Set the data in Python's global scope
-      pyodide.globals.set('video_data', videoData)
-      pyodide.globals.set('presentation_data', presentationData)
+      window.pyodide.globals.set('video_data', videoData)
+      window.pyodide.globals.set('presentation_data', presentationData)
       
       // Call the Python function with the data
-      const analysisResult = pyodide.runPython('analyze_presentation(video_data, presentation_data)')
+      const analysisResult = window.pyodide.runPython('analyze_presentation(video_data, presentation_data)')
       
       // Update the recording with the analysis result
       const { updateRecording } = await import('./utils/recordingStorage')
@@ -564,9 +526,9 @@ function RecordingsPage({ onBack }) {
                         e.stopPropagation()
                         handleAnalyze(recording.id)
                       }}
-                      disabled={analyzing[recording.id] || !pyodide}
+                      disabled={analyzing[recording.id]}
                     >
-                      {!pyodide ? 'Loading Python...' : analyzing[recording.id] ? 'Analyzing...' : 'Analyze'}
+                      {analyzing[recording.id] ? 'Analyzing...' : 'Analyze'}
                     </button>
                     <button
                       className="delete-button"

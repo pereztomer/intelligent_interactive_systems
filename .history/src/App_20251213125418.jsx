@@ -121,21 +121,9 @@ function App() {
         const reader = new FileReader()
         reader.onloadend = async () => {
           const base64data = reader.result
-          
-          // Also convert PDF to base64 if available
-          let pdfData = null
-          if (file) {
-            pdfData = await new Promise((resolve) => {
-              const pdfReader = new FileReader()
-              pdfReader.onloadend = () => resolve(pdfReader.result)
-              pdfReader.readAsDataURL(file)
-            })
-          }
-          
           try {
             await saveRecording({
               videoData: base64data,
-              pdfData: pdfData,
               fileName: file?.name || 'presentation.pdf',
               duration: recordingTime,
               timestamp: Date.now()
@@ -368,50 +356,9 @@ function RecordingsPage({ onBack }) {
   const [loading, setLoading] = useState(true)
   const [selectedRecording, setSelectedRecording] = useState(null)
   const [analyzing, setAnalyzing] = useState({}) // Track which recordings are being analyzed
-  const [pyodide, setPyodide] = useState(null) // Pyodide instance
 
   useEffect(() => {
     loadRecordings()
-    
-    // Dynamically load Pyodide using script tag
-    const loadPyodide = async () => {
-      try {
-        // Check if Pyodide is already loaded
-        if (window.loadPyodide) {
-          const pyodideInstance = await window.loadPyodide({
-            indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.1/full/",
-          })
-          setPyodide(pyodideInstance)
-          return
-        }
-
-        // Load Pyodide script dynamically
-        const script = document.createElement('script')
-        script.src = "https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"
-        script.async = true
-        
-        script.onload = async () => {
-          try {
-            const pyodideInstance = await window.loadPyodide({
-              indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.1/full/",
-            })
-            setPyodide(pyodideInstance)
-          } catch (err) {
-            console.error('Error initializing Pyodide:', err)
-          }
-        }
-        
-        script.onerror = (err) => {
-          console.error('Error loading Pyodide script:', err)
-        }
-        
-        document.head.appendChild(script)
-      } catch (err) {
-        console.error('Error loading Pyodide:', err)
-      }
-    }
-    
-    loadPyodide()
   }, [])
 
   const loadRecordings = async () => {
@@ -454,34 +401,13 @@ function RecordingsPage({ onBack }) {
     setAnalyzing(prev => ({ ...prev, [recordingId]: true }))
     
     try {
-      // Get the recording
-      const recording = recordings.find(r => r.id === recordingId)
-      if (!recording) {
-        throw new Error('Recording not found')
-      }
-
-      // Wait for Pyodide to load if not ready
-      if (!pyodide) {
-        throw new Error('Pyodide is still loading. Please wait a moment and try again.')
-      }
-
-      // Load the Python file from public folder
-      const pythonFileResponse = await fetch('/python/analyze.py')
-      const pythonCode = await pythonFileResponse.text()
+      // Simulate calling Python code
+      // In a real implementation, this would call a backend API that runs Python
+      // For now, we'll simulate the Python execution
+      await new Promise(resolve => setTimeout(resolve, 1500)) // Simulate processing time
       
-      // Run the Python code to define the function
-      pyodide.runPython(pythonCode)
-      
-      // Get video and PDF data from recording
-      const videoData = recording.videoData || ''
-      const presentationData = recording.pdfData || ''
-      
-      // Set the data in Python's global scope
-      pyodide.globals.set('video_data', videoData)
-      pyodide.globals.set('presentation_data', presentationData)
-      
-      // Call the Python function with the data
-      const analysisResult = pyodide.runPython('analyze_presentation(video_data, presentation_data)')
+      // This simulates what Python would return: "GOOD JOB"
+      const analysisResult = "GOOD JOB"
       
       // Update the recording with the analysis result
       const { updateRecording } = await import('./utils/recordingStorage')
@@ -499,7 +425,7 @@ function RecordingsPage({ onBack }) {
       }
     } catch (err) {
       console.error('Error analyzing recording:', err)
-      alert('Error analyzing recording: ' + err.message)
+      alert('Error analyzing recording')
     } finally {
       setAnalyzing(prev => ({ ...prev, [recordingId]: false }))
     }
@@ -564,9 +490,9 @@ function RecordingsPage({ onBack }) {
                         e.stopPropagation()
                         handleAnalyze(recording.id)
                       }}
-                      disabled={analyzing[recording.id] || !pyodide}
+                      disabled={analyzing[recording.id]}
                     >
-                      {!pyodide ? 'Loading Python...' : analyzing[recording.id] ? 'Analyzing...' : 'Analyze'}
+                      {analyzing[recording.id] ? 'Analyzing...' : 'Analyze'}
                     </button>
                     <button
                       className="delete-button"
