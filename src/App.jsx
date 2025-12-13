@@ -355,6 +355,7 @@ function RecordingsPage({ onBack }) {
   const [recordings, setRecordings] = useState([])
   const [loading, setLoading] = useState(true)
   const [selectedRecording, setSelectedRecording] = useState(null)
+  const [analyzing, setAnalyzing] = useState({}) // Track which recordings are being analyzed
 
   useEffect(() => {
     loadRecordings()
@@ -365,6 +366,14 @@ function RecordingsPage({ onBack }) {
       const { getAllRecordings } = await import('./utils/recordingStorage')
       const allRecordings = await getAllRecordings()
       setRecordings(allRecordings)
+      
+      // Update selected recording if it exists
+      if (selectedRecording) {
+        const updated = allRecordings.find(r => r.id === selectedRecording.id)
+        if (updated) {
+          setSelectedRecording(updated)
+        }
+      }
     } catch (err) {
       console.error('Error loading recordings:', err)
     } finally {
@@ -385,6 +394,40 @@ function RecordingsPage({ onBack }) {
         console.error('Error deleting recording:', err)
         alert('Error deleting recording')
       }
+    }
+  }
+
+  const handleAnalyze = async (recordingId) => {
+    setAnalyzing(prev => ({ ...prev, [recordingId]: true }))
+    
+    try {
+      // Simulate calling Python code
+      // In a real implementation, this would call a backend API that runs Python
+      // For now, we'll simulate the Python execution
+      await new Promise(resolve => setTimeout(resolve, 1500)) // Simulate processing time
+      
+      // This simulates what Python would return: "GOOD JOB"
+      const analysisResult = "GOOD JOB"
+      
+      // Update the recording with the analysis result
+      const { updateRecording } = await import('./utils/recordingStorage')
+      await updateRecording(recordingId, { analysisResult })
+      
+      // Reload recordings to show the result
+      loadRecordings()
+      
+      // Update selected recording if it's the one being analyzed
+      if (selectedRecording?.id === recordingId) {
+        const updated = recordings.find(r => r.id === recordingId)
+        if (updated) {
+          setSelectedRecording({ ...updated, analysisResult })
+        }
+      }
+    } catch (err) {
+      console.error('Error analyzing recording:', err)
+      alert('Error analyzing recording')
+    } finally {
+      setAnalyzing(prev => ({ ...prev, [recordingId]: false }))
     }
   }
 
@@ -436,16 +479,31 @@ function RecordingsPage({ onBack }) {
                     <p className="recording-meta">
                       {formatDate(recording.timestamp)} • {formatTime(recording.duration || 0)}
                     </p>
+                    {recording.analysisResult && (
+                      <p className="analysis-result">📊 {recording.analysisResult}</p>
+                    )}
                   </div>
-                  <button
-                    className="delete-button"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleDelete(recording.id)
-                    }}
-                  >
-                    🗑️
-                  </button>
+                  <div className="recording-actions">
+                    <button
+                      className="analyze-button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleAnalyze(recording.id)
+                      }}
+                      disabled={analyzing[recording.id]}
+                    >
+                      {analyzing[recording.id] ? 'Analyzing...' : 'Analyze'}
+                    </button>
+                    <button
+                      className="delete-button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDelete(recording.id)
+                      }}
+                    >
+                      🗑️
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -464,6 +522,11 @@ function RecordingsPage({ onBack }) {
                   <p><strong>File:</strong> {selectedRecording.fileName}</p>
                   <p><strong>Date:</strong> {formatDate(selectedRecording.timestamp)}</p>
                   <p><strong>Duration:</strong> {formatTime(selectedRecording.duration || 0)}</p>
+                  {selectedRecording.analysisResult && (
+                    <div className="analysis-result-box">
+                      <p><strong>Analysis:</strong> {selectedRecording.analysisResult}</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

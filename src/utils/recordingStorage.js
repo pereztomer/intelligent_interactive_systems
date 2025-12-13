@@ -84,3 +84,26 @@ export const deleteRecording = async (id) => {
   })
 }
 
+// Update a recording (e.g., to add analysis result)
+export const updateRecording = async (id, updates) => {
+  const db = await initDB()
+  const transaction = db.transaction([STORE_NAME], 'readwrite')
+  const store = transaction.objectStore(STORE_NAME)
+
+  return new Promise((resolve, reject) => {
+    const getRequest = store.get(id)
+    getRequest.onsuccess = () => {
+      const recording = getRequest.result
+      if (recording) {
+        const updatedRecording = { ...recording, ...updates }
+        const putRequest = store.put(updatedRecording)
+        putRequest.onsuccess = () => resolve(updatedRecording)
+        putRequest.onerror = () => reject(putRequest.error)
+      } else {
+        reject(new Error('Recording not found'))
+      }
+    }
+    getRequest.onerror = () => reject(getRequest.error)
+  })
+}
+
