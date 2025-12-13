@@ -12,7 +12,7 @@ def analyze_presentation(video_data, presentation_data):
     # Process video and presentation here
     # For now, return a simple message
     result = "good job from python code actually working"
-    # result = type(video_data)
+    result = type(video_data)
     
     return result
 
