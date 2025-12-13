@@ -195,11 +195,6 @@ function App() {
               fileName: currentSession.pdfFileName || 'presentation.pdf',
               duration: recordingTime
             })
-            
-            // Reload the current session to get updated attempts
-            const updatedSession = await getSession(currentSession.id)
-            setCurrentSession(updatedSession)
-            
             alert('Recording saved successfully!')
           } catch (err) {
             console.error('Error saving recording:', err)

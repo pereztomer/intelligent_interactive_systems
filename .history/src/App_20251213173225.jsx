@@ -195,11 +195,6 @@ function App() {
               fileName: currentSession.pdfFileName || 'presentation.pdf',
               duration: recordingTime
             })
-            
-            // Reload the current session to get updated attempts
-            const updatedSession = await getSession(currentSession.id)
-            setCurrentSession(updatedSession)
-            
             alert('Recording saved successfully!')
           } catch (err) {
             console.error('Error saving recording:', err)
@@ -817,15 +812,6 @@ function SessionsPage({ onBack }) {
                     >
                       {!pyodide ? 'Loading Python...' : analyzing[`session-${session.id}`] ? 'Analyzing...' : 'Analyze Session'}
                     </button>
-                    <button
-                      className="delete-button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDeleteSession(session.id)
-                      }}
-                    >
-                      🗑️
-                    </button>
                   </div>
                 </div>
               ))}
@@ -872,15 +858,6 @@ function SessionsPage({ onBack }) {
                             disabled={analyzing[`${selectedSession.id}-${attempt.id}`] || !pyodide}
                           >
                             {analyzing[`${selectedSession.id}-${attempt.id}`] ? 'Analyzing...' : 'Analyze'}
-                          </button>
-                          <button
-                            className="delete-button"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleDeleteAttempt(selectedSession.id, attempt.id)
-                            }}
-                          >
-                            🗑️
                           </button>
                         </div>
                       </div>

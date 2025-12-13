@@ -195,11 +195,6 @@ function App() {
               fileName: currentSession.pdfFileName || 'presentation.pdf',
               duration: recordingTime
             })
-            
-            // Reload the current session to get updated attempts
-            const updatedSession = await getSession(currentSession.id)
-            setCurrentSession(updatedSession)
-            
             alert('Recording saved successfully!')
           } catch (err) {
             console.error('Error saving recording:', err)
@@ -715,42 +710,6 @@ function SessionsPage({ onBack }) {
     }
   }
 
-  const handleDeleteSession = async (sessionId) => {
-    if (confirm('Are you sure you want to delete this session and all its attempts?')) {
-      try {
-        await deleteSession(sessionId)
-        loadSessions()
-        if (selectedSession?.id === sessionId) {
-          setSelectedSession(null)
-          setSelectedAttempt(null)
-        }
-      } catch (err) {
-        console.error('Error deleting session:', err)
-        alert('Error deleting session')
-      }
-    }
-  }
-
-  const handleDeleteAttempt = async (sessionId, attemptId) => {
-    if (confirm('Are you sure you want to delete this attempt?')) {
-      try {
-        await deleteAttempt(attemptId)
-        loadSessions()
-        if (selectedAttempt?.id === attemptId) {
-          setSelectedAttempt(null)
-        }
-        // Update selected session
-        const updated = sessions.find(s => s.id === sessionId)
-        if (updated) {
-          setSelectedSession(updated)
-        }
-      } catch (err) {
-        console.error('Error deleting attempt:', err)
-        alert('Error deleting attempt')
-      }
-    }
-  }
-
   const formatDate = (timestamp) => {
     return new Date(timestamp).toLocaleString()
   }
@@ -817,15 +776,6 @@ function SessionsPage({ onBack }) {
                     >
                       {!pyodide ? 'Loading Python...' : analyzing[`session-${session.id}`] ? 'Analyzing...' : 'Analyze Session'}
                     </button>
-                    <button
-                      className="delete-button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDeleteSession(session.id)
-                      }}
-                    >
-                      🗑️
-                    </button>
                   </div>
                 </div>
               ))}
@@ -872,15 +822,6 @@ function SessionsPage({ onBack }) {
                             disabled={analyzing[`${selectedSession.id}-${attempt.id}`] || !pyodide}
                           >
                             {analyzing[`${selectedSession.id}-${attempt.id}`] ? 'Analyzing...' : 'Analyze'}
-                          </button>
-                          <button
-                            className="delete-button"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleDeleteAttempt(selectedSession.id, attempt.id)
-                            }}
-                          >
-                            🗑️
                           </button>
                         </div>
                       </div>
