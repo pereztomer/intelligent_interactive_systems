@@ -3,9 +3,19 @@
   line-height: 1.5;
   font-weight: 400;
 
+  /* Navy Blue Theme Colors */
+  --navy-dark: #0a1628;
+  --navy-primary: #1e3a5f;
+  --navy-secondary: #2c5282;
+  --navy-accent: #3182ce;
+  --navy-light: #4a90d9;
+  --bg-light: #e8f0fa;
+  --bg-card: rgba(255, 255, 255, 0.95);
+
   color-scheme: light;
-  color: #2c3e50;
-  background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+  color: #1a202c;
+  background: linear-gradient(135deg, #b8d4e8 0%, #9fc5de 50%, #8bb8d4 100%);
+  background-attachment: fixed;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
