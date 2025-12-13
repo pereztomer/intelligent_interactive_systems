@@ -215,6 +215,15 @@ function App() {
               <button className="cta-button" onClick={handleGetStarted}>
                 Get Started
               </button>
+              <button 
+                className="view-recordings-button-landing" 
+                onClick={() => {
+                  setCurrentView('recordings')
+                  setShowLanding(false)
+                }}
+              >
+                View My Recordings
+              </button>
               {error && <p className="error">{error}</p>}
             </div>
           </div>
@@ -225,7 +234,13 @@ function App() {
 
   if (currentView === 'recordings') {
     return (
-      <RecordingsPage onBack={() => setCurrentView('viewer')} />
+      <RecordingsPage onBack={() => {
+        if (file) {
+          setCurrentView('viewer')
+        } else {
+          setCurrentView('landing')
+        }
+      }} />
     )
   }
 
@@ -399,7 +414,7 @@ function RecordingsPage({ onBack }) {
         <div className="recordings-header">
           <h2>My Recordings</h2>
           <button className="back-button" onClick={onBack}>
-            ← Back to Presentation
+            ← Back
           </button>
         </div>
 
