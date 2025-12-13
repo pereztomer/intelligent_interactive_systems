@@ -715,10 +715,10 @@ function App() {
                     type="file"
                     accept=".pdf"
                     onChange={handleFileUploadForAttempt}
-                    id="file-upload-attempt-inline"
+                    id="file-upload-attempt"
                     style={{ display: 'none' }}
                   />
-                  <button onClick={() => document.getElementById('file-upload-attempt-inline').click()}>
+                  <button onClick={() => document.getElementById('file-upload-attempt').click()}>
                     Upload PDF
                   </button>
                 </div>

@@ -37,10 +37,6 @@ function App() {
   const mediaRecorderRef = useRef(null)
   const chunksRef = useRef([])
   const timerRef = useRef(null)
-  
-  // Analysis state
-  const [pyodide, setPyodide] = useState(null)
-  const [analyzing, setAnalyzing] = useState({})
 
   // Load sessions on mount
   useEffect(() => {
@@ -48,46 +44,6 @@ function App() {
       loadSessions()
     }
   }, [currentView])
-
-  // Load Pyodide for analysis
-  useEffect(() => {
-    const loadPyodide = async () => {
-      try {
-        if (window.loadPyodide) {
-          const pyodideInstance = await window.loadPyodide({
-            indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.1/full/",
-          })
-          setPyodide(pyodideInstance)
-          return
-        }
-
-        const script = document.createElement('script')
-        script.src = "https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"
-        script.async = true
-        
-        script.onload = async () => {
-          try {
-            const pyodideInstance = await window.loadPyodide({
-              indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.1/full/",
-            })
-            setPyodide(pyodideInstance)
-          } catch (err) {
-            console.error('Error initializing Pyodide:', err)
-          }
-        }
-        
-        script.onerror = (err) => {
-          console.error('Error loading Pyodide script:', err)
-        }
-        
-        document.head.appendChild(script)
-      } catch (err) {
-        console.error('Error loading Pyodide:', err)
-      }
-    }
-    
-    loadPyodide()
-  }, [])
 
   const loadSessions = async () => {
     try {
@@ -363,53 +319,9 @@ function App() {
 
   // Handle analyze attempt
   const handleAnalyzeAttempt = async (attemptId) => {
-    setAnalyzing(prev => ({ ...prev, [attemptId]: true }))
-    
-    try {
-      if (!currentSession) {
-        throw new Error('No session loaded')
-      }
-
-      const attempt = currentSession.attempts?.find(a => a.id === attemptId)
-      if (!attempt) {
-        throw new Error('Attempt not found')
-      }
-
-      if (!pyodide) {
-        throw new Error('Pyodide is still loading. Please wait a moment and try again.')
-      }
-
-      // Load the Python file from public folder
-      const pythonFileResponse = await fetch('/python/analyze.py')
-      const pythonCode = await pythonFileResponse.text()
-      
-      // Run the Python code to define the function
-      pyodide.runPython(pythonCode)
-      
-      // Get video and PDF data from attempt
-      const videoData = attempt.videoData || ''
-      const presentationData = attempt.pdfData || ''
-      
-      // Set the data in Python's global scope
-      pyodide.globals.set('video_data', videoData)
-      pyodide.globals.set('presentation_data', presentationData)
-      
-      // Call the Python function with the data
-      const analysisResult = pyodide.runPython('analyze_presentation(video_data, presentation_data)')
-      
-      // Update the attempt with the analysis result as attemptFeedback
-      await updateAttempt(attemptId, { attemptFeedback: analysisResult })
-      
-      // Reload session to show the result
-      await loadSession(currentSession.id)
-      
-      alert('Analysis completed!')
-    } catch (err) {
-      console.error('Error analyzing attempt:', err)
-      alert('Error analyzing attempt: ' + err.message)
-    } finally {
-      setAnalyzing(prev => ({ ...prev, [attemptId]: false }))
-    }
+    // This will be implemented with Pyodide similar to before
+    // For now, just a placeholder
+    alert('Analysis feature coming soon!')
   }
 
   // ========== VIEW RENDERS ==========
@@ -523,50 +435,14 @@ function App() {
             </button>
           </div>
 
-          <div className="session-feedback-section">
-            {currentSession.processFeedback ? (
-              <div className="session-feedback-box">
-                <h3>Session Process Feedback</h3>
-                <p>{currentSession.processFeedback}</p>
-                <button 
-                  className="regenerate-feedback-button"
-                  onClick={async () => {
-                    // Generate process feedback from all attempts
-                    if (currentSession.attempts && currentSession.attempts.length > 0) {
-                      const feedback = `This session contains ${currentSession.attempts.length} attempt(s). Review your attempts to see detailed feedback for each one.`
-                      await updateSession(currentSession.id, { processFeedback: feedback })
-                      await loadSession(currentSession.id)
-                    }
-                  }}
-                >
-                  Regenerate Feedback
-                </button>
-              </div>
-            ) : (
-              currentSession.attempts && currentSession.attempts.length > 0 && (
-                <button 
-                  className="generate-feedback-button"
-                  onClick={async () => {
-                    // Generate process feedback from all attempts
-                    const feedback = `This session contains ${currentSession.attempts.length} attempt(s). Review your attempts to see detailed feedback for each one.`
-                    await updateSession(currentSession.id, { processFeedback: feedback })
-                    await loadSession(currentSession.id)
-                  }}
-                >
-                  Generate Session Feedback
-                </button>
-              )
-            )}
-          </div>
+          {currentSession.processFeedback && (
+            <div className="session-feedback-box">
+              <h3>Session Process Feedback</h3>
+              <p>{currentSession.processFeedback}</p>
+            </div>
+          )}
 
           <div className="session-actions-bar">
-            <input
-              type="file"
-              accept=".pdf"
-              onChange={handleFileUploadForAttempt}
-              id="file-upload-attempt"
-              style={{ display: 'none' }}
-            />
             <button 
               className="cta-button"
               onClick={() => handleNewAttempt(false)}
@@ -609,9 +485,8 @@ function App() {
                         e.stopPropagation()
                         await handleAnalyzeAttempt(attempt.id)
                       }}
-                      disabled={analyzing[attempt.id] || !pyodide}
                     >
-                      {!pyodide ? 'Loading Python...' : analyzing[attempt.id] ? 'Analyzing...' : 'Analyze'}
+                      Analyze
                     </button>
                     <button
                       className="delete-button"
@@ -715,10 +590,10 @@ function App() {
                     type="file"
                     accept=".pdf"
                     onChange={handleFileUploadForAttempt}
-                    id="file-upload-attempt-inline"
+                    id="file-upload-attempt"
                     style={{ display: 'none' }}
                   />
-                  <button onClick={() => document.getElementById('file-upload-attempt-inline').click()}>
+                  <button onClick={() => document.getElementById('file-upload-attempt').click()}>
                     Upload PDF
                   </button>
                 </div>
@@ -758,31 +633,10 @@ function App() {
             </button>
           </div>
 
-          {currentAttempt && (
-            <div className="attempt-details-section">
-              {currentAttempt.videoData && (
-                <div className="attempt-video-player">
-                  <h3>Recording</h3>
-                  <video
-                    controls
-                    src={currentAttempt.videoData}
-                    className="attempt-video"
-                  >
-                    Your browser does not support video playback.
-                  </video>
-                  <div className="attempt-video-info">
-                    <p><strong>Duration:</strong> {formatTime(currentAttempt.duration || 0)}</p>
-                    <p><strong>Recorded:</strong> {formatDate(currentAttempt.timestamp)}</p>
-                  </div>
-                </div>
-              )}
-              
-              {currentAttempt.attemptFeedback && (
-                <div className="attempt-feedback-box">
-                  <h3>Attempt Feedback</h3>
-                  <p>{currentAttempt.attemptFeedback}</p>
-                </div>
-              )}
+          {currentAttempt && currentAttempt.attemptFeedback && (
+            <div className="attempt-feedback-box">
+              <h3>Attempt Feedback</h3>
+              <p>{currentAttempt.attemptFeedback}</p>
             </div>
           )}
         </div>

@@ -523,50 +523,14 @@ function App() {
             </button>
           </div>
 
-          <div className="session-feedback-section">
-            {currentSession.processFeedback ? (
-              <div className="session-feedback-box">
-                <h3>Session Process Feedback</h3>
-                <p>{currentSession.processFeedback}</p>
-                <button 
-                  className="regenerate-feedback-button"
-                  onClick={async () => {
-                    // Generate process feedback from all attempts
-                    if (currentSession.attempts && currentSession.attempts.length > 0) {
-                      const feedback = `This session contains ${currentSession.attempts.length} attempt(s). Review your attempts to see detailed feedback for each one.`
-                      await updateSession(currentSession.id, { processFeedback: feedback })
-                      await loadSession(currentSession.id)
-                    }
-                  }}
-                >
-                  Regenerate Feedback
-                </button>
-              </div>
-            ) : (
-              currentSession.attempts && currentSession.attempts.length > 0 && (
-                <button 
-                  className="generate-feedback-button"
-                  onClick={async () => {
-                    // Generate process feedback from all attempts
-                    const feedback = `This session contains ${currentSession.attempts.length} attempt(s). Review your attempts to see detailed feedback for each one.`
-                    await updateSession(currentSession.id, { processFeedback: feedback })
-                    await loadSession(currentSession.id)
-                  }}
-                >
-                  Generate Session Feedback
-                </button>
-              )
-            )}
-          </div>
+          {currentSession.processFeedback && (
+            <div className="session-feedback-box">
+              <h3>Session Process Feedback</h3>
+              <p>{currentSession.processFeedback}</p>
+            </div>
+          )}
 
           <div className="session-actions-bar">
-            <input
-              type="file"
-              accept=".pdf"
-              onChange={handleFileUploadForAttempt}
-              id="file-upload-attempt"
-              style={{ display: 'none' }}
-            />
             <button 
               className="cta-button"
               onClick={() => handleNewAttempt(false)}
@@ -715,10 +679,10 @@ function App() {
                     type="file"
                     accept=".pdf"
                     onChange={handleFileUploadForAttempt}
-                    id="file-upload-attempt-inline"
+                    id="file-upload-attempt"
                     style={{ display: 'none' }}
                   />
-                  <button onClick={() => document.getElementById('file-upload-attempt-inline').click()}>
+                  <button onClick={() => document.getElementById('file-upload-attempt').click()}>
                     Upload PDF
                   </button>
                 </div>
@@ -758,31 +722,10 @@ function App() {
             </button>
           </div>
 
-          {currentAttempt && (
-            <div className="attempt-details-section">
-              {currentAttempt.videoData && (
-                <div className="attempt-video-player">
-                  <h3>Recording</h3>
-                  <video
-                    controls
-                    src={currentAttempt.videoData}
-                    className="attempt-video"
-                  >
-                    Your browser does not support video playback.
-                  </video>
-                  <div className="attempt-video-info">
-                    <p><strong>Duration:</strong> {formatTime(currentAttempt.duration || 0)}</p>
-                    <p><strong>Recorded:</strong> {formatDate(currentAttempt.timestamp)}</p>
-                  </div>
-                </div>
-              )}
-              
-              {currentAttempt.attemptFeedback && (
-                <div className="attempt-feedback-box">
-                  <h3>Attempt Feedback</h3>
-                  <p>{currentAttempt.attemptFeedback}</p>
-                </div>
-              )}
+          {currentAttempt && currentAttempt.attemptFeedback && (
+            <div className="attempt-feedback-box">
+              <h3>Attempt Feedback</h3>
+              <p>{currentAttempt.attemptFeedback}</p>
             </div>
           )}
         </div>

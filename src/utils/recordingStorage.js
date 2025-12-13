@@ -1,8 +1,9 @@
-// Utility functions for storing and retrieving recordings
+// Utility functions for storing and retrieving sessions and attempts
 
 const DB_NAME = 'PresentationRehearsalDB'
-const STORE_NAME = 'recordings'
-const DB_VERSION = 1
+const SESSIONS_STORE = 'sessions'
+const ATTEMPTS_STORE = 'attempts'
+const DB_VERSION = 3 // Bumped to force clean migration
 
 // Initialize IndexedDB
 const initDB = () => {
@@ -14,68 +15,134 @@ const initDB = () => {
 
     request.onupgradeneeded = (event) => {
       const db = event.target.result
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        const objectStore = db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true })
-        objectStore.createIndex('timestamp', 'timestamp', { unique: false })
+      
+      // Delete old stores if they exist (clean migration)
+      if (db.objectStoreNames.contains('recordings')) {
+        db.deleteObjectStore('recordings')
       }
+      if (db.objectStoreNames.contains(SESSIONS_STORE)) {
+        db.deleteObjectStore(SESSIONS_STORE)
+      }
+      if (db.objectStoreNames.contains(ATTEMPTS_STORE)) {
+        db.deleteObjectStore(ATTEMPTS_STORE)
+      }
+      
+      // Create sessions store
+      const sessionsStore = db.createObjectStore(SESSIONS_STORE, { keyPath: 'id', autoIncrement: true })
+      sessionsStore.createIndex('createdAt', 'createdAt', { unique: false })
+      
+      // Create attempts store
+      const attemptsStore = db.createObjectStore(ATTEMPTS_STORE, { keyPath: 'id', autoIncrement: true })
+      attemptsStore.createIndex('sessionId', 'sessionId', { unique: false })
+      attemptsStore.createIndex('timestamp', 'timestamp', { unique: false })
     }
   })
 }
 
-// Save a recording
-export const saveRecording = async (recordingData) => {
+// ========== SESSION FUNCTIONS ==========
+
+// Create a new session
+export const createSession = async (sessionName) => {
   const db = await initDB()
-  const transaction = db.transaction([STORE_NAME], 'readwrite')
-  const store = transaction.objectStore(STORE_NAME)
+  const transaction = db.transaction([SESSIONS_STORE], 'readwrite')
+  const store = transaction.objectStore(SESSIONS_STORE)
   
-  const recording = {
-    ...recordingData,
-    timestamp: Date.now(),
-    id: Date.now() // Simple ID generation
+  const session = {
+    name: sessionName || `Session ${new Date().toLocaleDateString()}`,
+    createdAt: Date.now(),
+    processFeedback: null
   }
 
   return new Promise((resolve, reject) => {
-    const request = store.add(recording)
-    request.onsuccess = () => resolve(recording.id)
-    request.onerror = () => reject(request.error)
-  })
-}
-
-// Get all recordings
-export const getAllRecordings = async () => {
-  const db = await initDB()
-  const transaction = db.transaction([STORE_NAME], 'readonly')
-  const store = transaction.objectStore(STORE_NAME)
-  const index = store.index('timestamp')
-
-  return new Promise((resolve, reject) => {
-    const request = index.getAll()
+    const request = store.add(session)
     request.onsuccess = () => {
-      const recordings = request.result.sort((a, b) => b.timestamp - a.timestamp)
-      resolve(recordings)
+      resolve({ ...session, id: request.result })
     }
     request.onerror = () => reject(request.error)
   })
 }
 
-// Get a single recording by ID
-export const getRecording = async (id) => {
+// Get all sessions
+export const getAllSessions = async () => {
   const db = await initDB()
-  const transaction = db.transaction([STORE_NAME], 'readonly')
-  const store = transaction.objectStore(STORE_NAME)
+  const transaction = db.transaction([SESSIONS_STORE], 'readonly')
+  const store = transaction.objectStore(SESSIONS_STORE)
+  const index = store.index('createdAt')
 
   return new Promise((resolve, reject) => {
-    const request = store.get(id)
-    request.onsuccess = () => resolve(request.result)
+    const request = index.getAll()
+    request.onsuccess = async () => {
+      const sessions = request.result.sort((a, b) => b.createdAt - a.createdAt)
+      
+      // Load attempts for each session
+      const sessionsWithAttempts = await Promise.all(
+        sessions.map(async (session) => {
+          const attempts = await getAttemptsBySession(session.id)
+          return { ...session, attempts }
+        })
+      )
+      
+      resolve(sessionsWithAttempts)
+    }
     request.onerror = () => reject(request.error)
   })
 }
 
-// Delete a recording
-export const deleteRecording = async (id) => {
+// Get a single session by ID
+export const getSession = async (id) => {
   const db = await initDB()
-  const transaction = db.transaction([STORE_NAME], 'readwrite')
-  const store = transaction.objectStore(STORE_NAME)
+  const transaction = db.transaction([SESSIONS_STORE], 'readonly')
+  const store = transaction.objectStore(SESSIONS_STORE)
+
+  return new Promise(async (resolve, reject) => {
+    const request = store.get(id)
+    request.onsuccess = async () => {
+      const session = request.result
+      if (session) {
+        const attempts = await getAttemptsBySession(id)
+        resolve({ ...session, attempts })
+      } else {
+        resolve(null)
+      }
+    }
+    request.onerror = () => reject(request.error)
+  })
+}
+
+// Update a session (e.g., to add process feedback)
+export const updateSession = async (id, updates) => {
+  const db = await initDB()
+  const transaction = db.transaction([SESSIONS_STORE], 'readwrite')
+  const store = transaction.objectStore(SESSIONS_STORE)
+
+  return new Promise((resolve, reject) => {
+    const getRequest = store.get(id)
+    getRequest.onsuccess = () => {
+      const session = getRequest.result
+      if (session) {
+        const updatedSession = { ...session, ...updates }
+        const putRequest = store.put(updatedSession)
+        putRequest.onsuccess = () => resolve(updatedSession)
+        putRequest.onerror = () => reject(putRequest.error)
+      } else {
+        reject(new Error('Session not found'))
+      }
+    }
+    getRequest.onerror = () => reject(getRequest.error)
+  })
+}
+
+// Delete a session and all its attempts
+export const deleteSession = async (id) => {
+  const db = await initDB()
+  
+  // First, delete all attempts in this session
+  const attempts = await getAttemptsBySession(id)
+  await Promise.all(attempts.map(attempt => deleteAttempt(attempt.id)))
+  
+  // Then delete the session
+  const transaction = db.transaction([SESSIONS_STORE], 'readwrite')
+  const store = transaction.objectStore(SESSIONS_STORE)
 
   return new Promise((resolve, reject) => {
     const request = store.delete(id)
@@ -84,26 +151,145 @@ export const deleteRecording = async (id) => {
   })
 }
 
-// Update a recording (e.g., to add analysis result)
-export const updateRecording = async (id, updates) => {
+// ========== ATTEMPT FUNCTIONS ==========
+
+// Save an attempt
+export const saveAttempt = async (attemptData) => {
   const db = await initDB()
-  const transaction = db.transaction([STORE_NAME], 'readwrite')
-  const store = transaction.objectStore(STORE_NAME)
+  const transaction = db.transaction([ATTEMPTS_STORE], 'readwrite')
+  const store = transaction.objectStore(ATTEMPTS_STORE)
+  
+  const attempt = {
+    ...attemptData,
+    timestamp: Date.now(),
+    attemptFeedback: null
+  }
+
+  return new Promise((resolve, reject) => {
+    const request = store.add(attempt)
+    request.onsuccess = () => {
+      resolve({ ...attempt, id: request.result })
+    }
+    request.onerror = () => reject(request.error)
+  })
+}
+
+// Get all attempts for a session
+export const getAttemptsBySession = async (sessionId) => {
+  const db = await initDB()
+  const transaction = db.transaction([ATTEMPTS_STORE], 'readonly')
+  const store = transaction.objectStore(ATTEMPTS_STORE)
+  const index = store.index('sessionId')
+
+  return new Promise((resolve, reject) => {
+    const request = index.getAll(sessionId)
+    request.onsuccess = () => {
+      const attempts = request.result.sort((a, b) => b.timestamp - a.timestamp)
+      resolve(attempts)
+    }
+    request.onerror = () => reject(request.error)
+  })
+}
+
+// Get a single attempt by ID
+export const getAttempt = async (id) => {
+  const db = await initDB()
+  const transaction = db.transaction([ATTEMPTS_STORE], 'readonly')
+  const store = transaction.objectStore(ATTEMPTS_STORE)
+
+  return new Promise((resolve, reject) => {
+    const request = store.get(id)
+    request.onsuccess = () => resolve(request.result)
+    request.onerror = () => reject(request.error)
+  })
+}
+
+// Update an attempt (e.g., to add attempt feedback)
+export const updateAttempt = async (id, updates) => {
+  const db = await initDB()
+  const transaction = db.transaction([ATTEMPTS_STORE], 'readwrite')
+  const store = transaction.objectStore(ATTEMPTS_STORE)
 
   return new Promise((resolve, reject) => {
     const getRequest = store.get(id)
     getRequest.onsuccess = () => {
-      const recording = getRequest.result
-      if (recording) {
-        const updatedRecording = { ...recording, ...updates }
-        const putRequest = store.put(updatedRecording)
-        putRequest.onsuccess = () => resolve(updatedRecording)
+      const attempt = getRequest.result
+      if (attempt) {
+        const updatedAttempt = { ...attempt, ...updates }
+        const putRequest = store.put(updatedAttempt)
+        putRequest.onsuccess = () => resolve(updatedAttempt)
         putRequest.onerror = () => reject(putRequest.error)
       } else {
-        reject(new Error('Recording not found'))
+        reject(new Error('Attempt not found'))
       }
     }
     getRequest.onerror = () => reject(getRequest.error)
   })
+}
+
+// Delete an attempt
+export const deleteAttempt = async (id) => {
+  const db = await initDB()
+  const transaction = db.transaction([ATTEMPTS_STORE], 'readwrite')
+  const store = transaction.objectStore(ATTEMPTS_STORE)
+
+  return new Promise((resolve, reject) => {
+    const request = store.delete(id)
+    request.onsuccess = () => resolve()
+    request.onerror = () => reject(request.error)
+  })
+}
+
+// ========== LEGACY SUPPORT (for backward compatibility) ==========
+
+// Legacy function - now creates a session and attempt
+export const saveRecording = async (recordingData) => {
+  // Create a session if not provided
+  let sessionId = recordingData.sessionId
+  if (!sessionId) {
+    const session = await createSession()
+    sessionId = session.id
+  }
+  
+  // Save as attempt
+  return await saveAttempt({
+    sessionId,
+    videoData: recordingData.videoData,
+    pdfData: recordingData.pdfData,
+    fileName: recordingData.fileName,
+    duration: recordingData.duration
+  })
+}
+
+// Legacy function - get all recordings (now returns all attempts)
+export const getAllRecordings = async () => {
+  const db = await initDB()
+  const transaction = db.transaction([ATTEMPTS_STORE], 'readonly')
+  const store = transaction.objectStore(ATTEMPTS_STORE)
+  const index = store.index('timestamp')
+
+  return new Promise((resolve, reject) => {
+    const request = index.getAll()
+    request.onsuccess = () => {
+      const attempts = request.result.sort((a, b) => b.timestamp - a.timestamp)
+      resolve(attempts)
+    }
+    request.onerror = () => reject(request.error)
+  })
+}
+
+// Legacy function - get recording by ID (now gets attempt)
+export const getRecording = async (id) => {
+  return await getAttempt(id)
+}
+
+// Legacy function - delete recording (now deletes attempt)
+export const deleteRecording = async (id) => {
+  return await deleteAttempt(id)
+}
+
+// Legacy function - update recording (now updates attempt)
+export const updateRecording = async (id, updates) => {
+  return await updateAttempt(id, updates)
 }
 
