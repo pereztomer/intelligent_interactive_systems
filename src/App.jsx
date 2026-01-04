@@ -379,8 +379,8 @@ function App() {
         throw new Error('Pyodide is still loading. Please wait a moment and try again.')
       }
 
-      // Load the Python file from public folder
-      const pythonFileResponse = await fetch('/python/analyze.py')
+      // Load the Python file from public folder (using demo for now)
+      const pythonFileResponse = await fetch('/python/demo_analyze.py')
       const pythonCode = await pythonFileResponse.text()
       
       // Run the Python code to define the function
