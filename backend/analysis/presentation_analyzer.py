@@ -79,45 +79,49 @@ def analyze_presentation_recording(
             'sample_rate': audio_result['sample_rate']
         }
         
-        # Step 2: Run diarization (speaker detection)
+        # Step 2: Analyze speech (single speaker)
         print("\n" + "="*80)
-        print("STEP 2: SPEAKER DIARIZATION")
+        print("STEP 2: SPEECH ANALYSIS")
         print("="*80)
         
         # Import here to avoid loading heavy libraries if audio extraction fails
         try:
-            from diarization_analyzer import diarize_with_improved_pipeline
+            from single_speaker_analyzer import analyze_single_speaker_presentation
             
-            diarization_json = os.path.join(output_dir, 'diarization.json')
+            analysis_json = os.path.join(output_dir, 'speech_analysis.json')
             
-            diarization_result = diarize_with_improved_pipeline(
+            speech_result = analyze_single_speaker_presentation(
                 audio_path,
-                diarization_json,
-                use_num_speakers=None,  # Auto-detect
-                min_speakers=1,
-                max_speakers=3
+                analysis_json,
+                enable_transcription=True
             )
             
-            results['steps']['diarization'] = {
+            results['steps']['speech_analysis'] = {
                 'status': 'success',
-                'segments': len(diarization_result['segments']),
-                'speakers': len(set(seg['speaker'] for seg in diarization_result['segments'])),
-                'results_path': diarization_json
+                'duration': speech_result['duration'],
+                'speaking_time': speech_result['pacing_metrics']['total_speaking_time'],
+                'speaking_percentage': speech_result['pacing_metrics']['speaking_percentage'],
+                'segments': len(speech_result['speech_segments']),
+                'long_pauses': speech_result['pacing_metrics']['num_long_pauses'],
+                'transcribed': speech_result['transcription']['success'] if speech_result['transcription'] else False,
+                'results_path': analysis_json
             }
             
-            print(f"✓ Diarization completed")
-            print(f"  - Segments: {len(diarization_result['segments'])}")
-            print(f"  - Speakers: {results['steps']['diarization']['speakers']}")
+            print(f"✓ Speech analysis completed")
+            print(f"  - Duration: {speech_result['duration']:.1f}s")
+            print(f"  - Speaking: {results['steps']['speech_analysis']['speaking_percentage']:.1f}%")
             
         except ImportError as e:
-            print(f"⚠️  Diarization skipped (missing dependencies): {e}")
-            results['steps']['diarization'] = {
+            print(f"⚠️  Speech analysis skipped (missing dependencies): {e}")
+            results['steps']['speech_analysis'] = {
                 'status': 'skipped',
-                'reason': 'Missing pyannote.audio or dependencies'
+                'reason': 'Missing librosa or dependencies'
             }
         except Exception as e:
-            print(f"❌ Diarization failed: {e}")
-            results['steps']['diarization'] = {
+            print(f"❌ Speech analysis failed: {e}")
+            import traceback
+            traceback.print_exc()
+            results['steps']['speech_analysis'] = {
                 'status': 'failed',
                 'error': str(e)
             }
@@ -166,20 +170,30 @@ def generate_feedback(analysis_results):
         audio = analysis_results['steps']['audio_extraction']
         if audio['status'] == 'success':
             duration_sec = audio['file_size'] / (audio['sample_rate'] * 2)  # Rough estimate
-            feedback_parts.append(f"✅ Audio extracted: {duration_sec:.1f} seconds")
-        else:
-            feedback_parts.append(f"❌ Audio extraction failed")
-    
-    # Diarization feedback
-    if 'diarization' in analysis_results['steps']:
-        diarization = analysis_results['steps']['diarization']
-        if diarization['status'] == 'success':
-            feedback_parts.append(f"\n🎤 Speaker Analysis:")
-            feedback_parts.append(f"  - Detected {diarization['speakers']} speaker(s)")
-            feedback_parts.append(f"  - {diarization['segments']} speech segments")
+      Speech analysis feedback
+    if 'speech_analysis' in analysis_results['steps']:
+        speech = analysis_results['steps']['speech_analysis']
+        if speech['status'] == 'success':
+            feedback_parts.append(f"\n🎤 Speech Analysis:")
+            feedback_parts.append(f"  - Duration: {speech['duration']:.1f}s")
+            feedback_parts.append(f"  - Speaking time: {speech['speaking_time']:.1f}s ({speech['speaking_percentage']:.1f}%)")
+            feedback_parts.append(f"  - Speech segments: {speech['segments']}")
             
-            if diarization['speakers'] == 1:
-                feedback_parts.append(f"\n💡 Tip: This appears to be a solo presentation.")
+            # Pacing feedback
+            if speech['speaking_percentage'] < 60:
+                feedback_parts.append(f"\n💡 Tip: Consider speaking more - only {speech['speaking_percentage']:.0f}% speaking time")
+            elif speech['speaking_percentage'] > 90:
+                feedback_parts.append(f"\n💡 Tip: Good pacing! {speech['speaking_percentage']:.0f}% speaking time")
+            
+            # Pause feedback
+            if speech['long_pauses'] > 5:
+                feedback_parts.append(f"\n⚠️  Detected {speech['long_pauses']} long pauses - consider smoother transitions")
+            
+            # Transcription feedback
+            if speech.get('transcribed'):
+                feedback_parts.append(f"\n📝 Transcription available - check for filler words")
+        elif speech['status'] == 'skipped':
+            feedback_parts.append(f"\n⚠️  Speech analysis unavailable (install librosa
             else:
                 feedback_parts.append(f"\n💡 Tip: Multiple speakers detected - great for Q&A sections!")
         elif diarization['status'] == 'skipped':

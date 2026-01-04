@@ -403,7 +403,9 @@ function App() {
       // Reload session to show the result
       await loadSession(currentSession.id)
       
-      alert('Analysis completed!')
+      // Show summary in alert
+      const summary = analysisResult.split('\n').slice(0, 5).join('\n')
+      alert('Analysis completed!\n\nClick "View Feedback" to see full results.\n\nPreview:\n' + summary)
     } catch (err) {
       console.error('Error analyzing attempt:', err)
       alert('Error analyzing attempt: ' + err.message)
@@ -620,6 +622,17 @@ function App() {
                     >
                       {!pyodide ? 'Loading Python...' : analyzing[attempt.id] ? 'Analyzing...' : 'Analyze'}
                     </button>
+                    {attempt.attemptFeedback && (
+                      <button
+                        className="analyze-button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleSelectAttempt(attempt)
+                        }}
+                      >
+                        View Feedback
+                      </button>
+                    )}
                     <button
                       className="delete-button"
                       onClick={async (e) => {
@@ -786,8 +799,10 @@ function App() {
               
               {currentAttempt.attemptFeedback && (
                 <div className="attempt-feedback-box">
-                  <h3>Attempt Feedback</h3>
-                  <p>{currentAttempt.attemptFeedback}</p>
+                  <h3>Analysis Results</h3>
+                  <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>
+                    {currentAttempt.attemptFeedback}
+                  </pre>
                 </div>
               )}
             </div>

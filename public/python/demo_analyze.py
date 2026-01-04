@@ -82,5 +82,8 @@ Backend Python script ready for deployment! ✨
     print("\n" + "=" * 50)
     print("DEMO ANALYSIS FINISHED")
     print("=" * 50)
+    print("\n🎉 RETURNING FEEDBACK TO USER:")
+    print(result)
+    print("\n" + "=" * 50)
     
     return result

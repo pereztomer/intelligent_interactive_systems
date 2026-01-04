@@ -17,6 +17,9 @@ venv/
 *.pyc
 __pycache__/
 
+# Environment variables (contains tokens!)
+.env
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

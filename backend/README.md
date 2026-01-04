@@ -7,10 +7,19 @@ This directory contains Python scripts for advanced presentation analysis.
 ```
 backend/
 └── analysis/
-    ├── audio_extractor.py          # Extract audio from video recordings
-    ├── diarization_analyzer.py     # Speaker diarization (who spoke when)
-    └── presentation_analyzer.py    # Main orchestrator
+    ├── audio_extractor.py           # Extract audio from video recordings
+    ├── single_speaker_analyzer.py   # Single-speaker analysis (NEW!)
+    └── presentation_analyzer.py     # Main orchestrator
 ```
+
+## 🎯 Single-Speaker Focus
+
+This system is optimized for **solo presentations** (one speaker only):
+- ✅ Speech activity detection (when speaking vs silence)
+- ✅ Pacing analysis (speaking time, pauses)
+- ✅ Audio quality metrics
+- ✅ Transcription (what was said)
+- ❌ No speaker diarization needed (simplified!)
 
 ## 🔄 Data Flow
 
@@ -56,22 +65,21 @@ results = analyze_presentation_recording(
 )
 
 print(results['feedback'])
-```
-
-## 📦 Requirements
-
-Install dependencies:
-```bash
-# Activate virtual environment first
-.\venv\Scripts\Activate.ps1
-
-# Install backend libraries
+``` (simplified for single speaker!)
 pip install -r requirements.txt
 ```
 
-### Additional Requirement: FFmpeg
+### Key Libraries:
+- **librosa**: Audio analysis
+- **soundfile**: Audio I/O
+- **openai-whisper**: Speech-to-text transcription
+- **numpy, scipy**: Numerical processing📦 Requirements
 
-Audio extraction requires FFmpeg to be installed:
+Install dependencies:
+```b~~HuggingFace Token~~ (Not Needed!)
+
+Since we're doing single-speaker analysis, no speaker diarization required.
+Your HuggingFace token is stored in `.env` but won't be used.extraction requires FFmpeg to be installed:
 - **Windows**: Download from https://ffmpeg.org/download.html
 - **Mac**: `brew install ffmpeg`
 - **Linux**: `sudo apt install ffmpeg`
@@ -117,10 +125,11 @@ def analyze():
 ### Option 3: Hybrid Approach
 - Browser: Basic validation and UI
 - Backend: Heavy processing (diarization, transcription)
-- Communication: REST API or local file exchange
-
-## 📊 Analysis Pipeline
-
+- Communech Analysis** (`single_speaker_analyzer.py`)
+   - Detect speech segments vs silence
+   - Calculate pacing metrics (speaking %, pauses)
+   - Analyze audio quality
+   - Transcribe speech to text (Whisper)
 1. **Audio Extraction** (`audio_extractor.py`)
    - Convert base64 video → binary → WAV audio
    - Mono, 16kHz (optimized for speech)
