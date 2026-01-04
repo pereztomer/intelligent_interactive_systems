@@ -150,12 +150,13 @@ def analyze_speaking_pace(segments, total_duration):
     return metrics
 
 
-def transcribe_audio(audio_path):
+def transcribe_audio(audio_path, language='en'):
     """
     Transcribe audio using Whisper
     
     Args:
         audio_path: Path to audio file
+        language: Language code (default 'en' for English)
     
     Returns:
         dict with transcription results
@@ -170,15 +171,15 @@ def transcribe_audio(audio_path):
         model = whisper.load_model("base")
         
         print("  Transcribing...")
-        result = model.transcribe(audio_path)
+        result = model.transcribe(audio_path, language=language)
         
         print(f"  ✓ Transcription complete")
-        print(f"  ✓ Detected language: {result['language']}")
+        print(f"  ✓ Language: {language}")
         
         return {
             'success': True,
             'text': result['text'],
-            'language': result['language'],
+            'language': language,
             'segments': result['segments']
         }
     
@@ -227,7 +228,7 @@ def analyze_audio_quality(audio, sr):
         'peak_amplitude': float(peak),
         'zero_crossing_rate': float(zcr),
         'spectral_centroid': float(avg_centroid),
-        'clipping_detected': peak > 0.95
+        'clipping_detected': bool(peak > 0.95)
     }
     
     print(f"  ✓ RMS Energy: {rms:.4f}")

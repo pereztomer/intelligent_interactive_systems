@@ -361,6 +361,192 @@ function App() {
     setCurrentView('attempt')
   }
 
+  // Helper functions for backend analysis
+  const checkBackendAvailable = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/health', {
+        method: 'GET',
+        signal: AbortSignal.timeout(2000) // 2 second timeout
+      })
+      return response.ok
+    } catch (err) {
+      return false
+    }
+  }
+
+  const extractAudioFromVideo = async (videoBase64) => {
+    try {
+      // Convert base64 video to blob
+      const response = await fetch(videoBase64)
+      const videoBlob = await response.blob()
+      
+      // Create audio context
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+      
+      // Decode video to get audio
+      const arrayBuffer = await videoBlob.arrayBuffer()
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
+      
+      // Convert to WAV format
+      const wavBlob = audioBufferToWav(audioBuffer)
+      
+      // Convert to base64
+      return new Promise((resolve) => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result)
+        reader.readAsDataURL(wavBlob)
+      })
+    } catch (err) {
+      console.error('Audio extraction error:', err)
+      return null
+    }
+  }
+
+  const audioBufferToWav = (audioBuffer) => {
+    const numChannels = 1 // Mono
+    const sampleRate = 16000 // 16kHz for speech
+    const format = 1 // PCM
+    const bitDepth = 16
+    
+    // Resample to 16kHz mono
+    const length = Math.ceil(audioBuffer.duration * sampleRate)
+    const result = new Float32Array(length)
+    const originalSampleRate = audioBuffer.sampleRate
+    
+    for (let i = 0; i < length; i++) {
+      const originalIndex = Math.floor(i * originalSampleRate / sampleRate)
+      let sum = 0
+      for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
+        sum += audioBuffer.getChannelData(channel)[originalIndex] || 0
+      }
+      result[i] = sum / audioBuffer.numberOfChannels
+    }
+    
+    // Create WAV file
+    const buffer = new ArrayBuffer(44 + result.length * 2)
+    const view = new DataView(buffer)
+    
+    // WAV header
+    const writeString = (offset, string) => {
+      for (let i = 0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i))
+      }
+    }
+    
+    writeString(0, 'RIFF')
+    view.setUint32(4, 36 + result.length * 2, true)
+    writeString(8, 'WAVE')
+    writeString(12, 'fmt ')
+    view.setUint32(16, 16, true)
+    view.setUint16(20, format, true)
+    view.setUint16(22, numChannels, true)
+    view.setUint32(24, sampleRate, true)
+    view.setUint32(28, sampleRate * numChannels * bitDepth / 8, true)
+    view.setUint16(32, numChannels * bitDepth / 8, true)
+    view.setUint16(34, bitDepth, true)
+    writeString(36, 'data')
+    view.setUint32(40, result.length * 2, true)
+    
+    // Write audio data
+    let offset = 44
+    for (let i = 0; i < result.length; i++) {
+      const sample = Math.max(-1, Math.min(1, result[i]))
+      view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true)
+      offset += 2
+    }
+    
+    return new Blob([buffer], { type: 'audio/wav' })
+  }
+
+  const formatBackendResults = (result) => {
+    const lines = []
+    lines.push('🎯 BACKEND ANALYSIS RESULTS')
+    lines.push('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    lines.push('')
+    lines.push(`⏱️  Duration: ${result.duration.toFixed(1)}s`)
+    lines.push('')
+    lines.push('📊 PACING METRICS:')
+    lines.push(`   Speaking time: ${result.pacing.speakingTime.toFixed(1)}s (${result.pacing.speakingPercentage.toFixed(1)}%)`)
+    lines.push(`   Silence time: ${result.pacing.silenceTime.toFixed(1)}s`)
+    lines.push(`   Speech segments: ${result.pacing.segments}`)
+    lines.push(`   Long pauses: ${result.pacing.longPauses}`)
+    lines.push('')
+    
+    if (result.pacing.speakingPercentage < 60) {
+      lines.push('💡 TIP: Consider speaking more - low speaking time detected')
+    } else if (result.pacing.speakingPercentage > 85) {
+      lines.push('✅ GREAT: Good speaking pace!')
+    }
+    
+    if (result.pacing.longPauses > 5) {
+      lines.push('⚠️  Many long pauses detected - work on smoother transitions')
+    }
+    
+    lines.push('')
+    lines.push('🔊 AUDIO QUALITY:')
+    lines.push(`   RMS Energy: ${result.quality.rms_energy.toFixed(4)}`)
+    if (result.quality.clipping_detected) {
+      lines.push('   ⚠️  Clipping detected - lower your mic volume')
+    } else {
+      lines.push('   ✅ No clipping detected')
+    }
+    
+    if (result.transcription) {
+      lines.push('')
+      lines.push('📝 TRANSCRIPTION:')
+      const preview = result.transcription.slice(0, 300)
+      lines.push(`   ${preview}${result.transcription.length > 300 ? '...' : ''}`)
+    }
+    
+    lines.push('')
+    lines.push('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    lines.push('✨ Full backend analysis complete!')
+    
+    return lines.join('\n')
+  }
+
+  // Handle export recording
+  const handleExportRecording = (attempt) => {
+    try {
+      if (!attempt.videoData) {
+        alert('No video data found')
+        return
+      }
+
+      // Convert base64 to blob
+      const base64Data = attempt.videoData.split(',')[1]
+      const byteCharacters = atob(base64Data)
+      const byteArrays = []
+
+      for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+        const slice = byteCharacters.slice(offset, offset + 512)
+        const byteNumbers = new Array(slice.length)
+        for (let i = 0; i < slice.length; i++) {
+          byteNumbers[i] = slice.charCodeAt(i)
+        }
+        const byteArray = new Uint8Array(byteNumbers)
+        byteArrays.push(byteArray)
+      }
+
+      const blob = new Blob(byteArrays, { type: 'video/webm' })
+      const url = URL.createObjectURL(blob)
+      
+      // Create download link
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `recording_${attempt.id}_${new Date(attempt.timestamp).toISOString().slice(0, 10)}.webm`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      
+      alert('Recording exported successfully!\n\nTo analyze:\n1. Open terminal in project folder\n2. Run: python analyze_recording.py ' + a.download)
+    } catch (err) {
+      console.error('Error exporting recording:', err)
+      alert('Error exporting recording: ' + err.message)
+    }
+  }
+
   // Handle analyze attempt
   const handleAnalyzeAttempt = async (attemptId) => {
     setAnalyzing(prev => ({ ...prev, [attemptId]: true }))
@@ -375,37 +561,70 @@ function App() {
         throw new Error('Attempt not found')
       }
 
-      if (!pyodide) {
-        throw new Error('Pyodide is still loading. Please wait a moment and try again.')
-      }
+      // Check if backend server is running
+      const useBackend = await checkBackendAvailable()
+      
+      if (useBackend) {
+        // Backend mode: Extract audio and send to server
+        console.log('🚀 Using backend analysis...')
+        const audioData = await extractAudioFromVideo(attempt.videoData)
+        
+        if (!audioData) {
+          throw new Error('Failed to extract audio from video')
+        }
+        
+        // Send to backend
+        const response = await fetch('http://localhost:5000/analyze', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            audioData: audioData,
+            enableTranscription: true
+          })
+        })
+        
+        if (!response.ok) {
+          throw new Error('Backend analysis failed: ' + response.statusText)
+        }
+        
+        const result = await response.json()
+        
+        // Format results for display
+        const feedback = formatBackendResults(result)
+        
+        // Save feedback
+        await updateAttempt(attemptId, { attemptFeedback: feedback })
+        await loadSession(currentSession.id)
+        
+        alert('Backend analysis completed!\n\nClick "View Feedback" to see results.')
+      } else {
+        // Browser mode (fallback)
+        console.log('🌐 Using browser analysis...')
+        
+        if (!pyodide) {
+          throw new Error('Pyodide is still loading. Please wait a moment and try again.')
+        }
 
-      // Load the Python file from public folder (using demo for now)
-      const pythonFileResponse = await fetch('/python/demo_analyze.py')
-      const pythonCode = await pythonFileResponse.text()
-      
-      // Run the Python code to define the function
-      pyodide.runPython(pythonCode)
-      
-      // Get video and PDF data from attempt
-      const videoData = attempt.videoData || ''
-      const presentationData = attempt.pdfData || ''
-      
-      // Set the data in Python's global scope
-      pyodide.globals.set('video_data', videoData)
-      pyodide.globals.set('presentation_data', presentationData)
-      
-      // Call the Python function with the data
-      const analysisResult = pyodide.runPython('analyze_presentation(video_data, presentation_data)')
-      
-      // Update the attempt with the analysis result as attemptFeedback
-      await updateAttempt(attemptId, { attemptFeedback: analysisResult })
-      
-      // Reload session to show the result
-      await loadSession(currentSession.id)
-      
-      // Show summary in alert
-      const summary = analysisResult.split('\n').slice(0, 5).join('\n')
-      alert('Analysis completed!\n\nClick "View Feedback" to see full results.\n\nPreview:\n' + summary)
+        const pythonFileResponse = await fetch('/python/demo_analyze.py')
+        const pythonCode = await pythonFileResponse.text()
+        pyodide.runPython(pythonCode)
+        
+        const videoData = attempt.videoData || ''
+        const presentationData = attempt.pdfData || ''
+        
+        pyodide.globals.set('video_data', videoData)
+        pyodide.globals.set('presentation_data', presentationData)
+        
+        const analysisResult = pyodide.runPython('analyze_presentation(video_data, presentation_data)')
+        
+        await updateAttempt(attemptId, { attemptFeedback: analysisResult })
+        await loadSession(currentSession.id)
+        
+        const summary = analysisResult.split('\n').slice(0, 5).join('\n')
+        alert('Analysis completed!\n\nClick "View Feedback" to see full results.\n\nPreview:\n' + summary)
+      }
     } catch (err) {
       console.error('Error analyzing attempt:', err)
       alert('Error analyzing attempt: ' + err.message)
@@ -633,6 +852,16 @@ function App() {
                         View Feedback
                       </button>
                     )}
+                    <button
+                      className="analyze-button secondary"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleExportRecording(attempt)
+                      }}
+                      title="Export recording for backend analysis"
+                    >
+                      Export
+                    </button>
                     <button
                       className="delete-button"
                       onClick={async (e) => {

@@ -11,5 +11,9 @@ soundfile>=0.12.0
 # Speech analysis and transcription
 openai-whisper>=20231117
 
+# API server
+flask>=3.0.0
+flask-cors>=4.0.0
+
 # Environment management
 python-dotenv>=1.0.0
