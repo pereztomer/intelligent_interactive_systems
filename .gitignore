@@ -20,6 +20,9 @@ __pycache__/
 # Analysis results
 analysis_results/
 
+# Recording sessions (audio, video, navigation data)
+sessions/
+
 # Environment variables (contains tokens!)
 .env
 

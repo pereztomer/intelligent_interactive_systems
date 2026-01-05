@@ -9,8 +9,10 @@ import base64
 import tempfile
 import os
 import sys
+import json
 from pathlib import Path
 from datetime import datetime
+import re
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
@@ -20,6 +22,10 @@ from backend.analysis.single_speaker_analyzer import analyze_single_speaker_pres
 
 app = Flask(__name__)
 CORS(app)  # Allow requests from browser
+
+# Sessions directory
+SESSIONS_DIR = project_root / 'sessions'
+SESSIONS_DIR.mkdir(exist_ok=True)
 
 @app.route('/health', methods=['GET'])
 def health():
@@ -33,7 +39,7 @@ def analyze():
     
     Expected JSON:
     {
-        "audioData": "base64_encoded_audio",
+        "audioPath": "/path/to/audio.wav",  // Path to existing audio file
         "enableTranscription": true
     }
     
@@ -42,30 +48,23 @@ def analyze():
     try:
         data = request.get_json()
         
-        if not data or 'audioData' not in data:
-            return jsonify({'error': 'No audio data provided'}), 400
+        if not data or 'audioPath' not in data:
+            return jsonify({'error': 'No audio path provided'}), 400
         
-        audio_base64 = data['audioData']
+        audio_path = data['audioPath']
         enable_transcription = data.get('enableTranscription', True)
         
-        print(f"\n📨 Received audio data: {len(audio_base64)} characters")
+        # Verify audio file exists
+        if not os.path.exists(audio_path):
+            return jsonify({'error': f'Audio file not found: {audio_path}'}), 404
         
-        # Create analysis output directory in project folder
-        output_dir = project_root / 'analysis_results' / datetime.now().strftime('%Y%m%d_%H%M%S')
-        output_dir.mkdir(parents=True, exist_ok=True)
+        print(f"\n🔍 Analyzing existing audio file: {audio_path}")
         
-        audio_path = output_dir / 'audio.wav'
-        analysis_json = output_dir / 'analysis.json'
+        # Create analysis output directory in the same folder as audio
+        audio_dir = Path(audio_path).parent
+        analysis_json = audio_dir / 'analysis.json'
         
-        # Save audio data to file
-        if ',' in audio_base64:
-            audio_base64 = audio_base64.split(',', 1)[1]
-        
-        audio_binary = base64.b64decode(audio_base64)
-        with open(audio_path, 'wb') as f:
-            f.write(audio_binary)
-        
-        print(f"💾 Saved audio to: {audio_path}")
+        print(f"📊 Analysis results will be saved to: {analysis_json}")
         
         # Analyze
         print(f"🔍 Starting analysis...")
@@ -75,7 +74,7 @@ def analyze():
             enable_transcription=enable_transcription
         )
         
-        print(f"✅ Analysis complete! Results saved to: {output_dir}")
+        print(f"✅ Analysis complete! Results saved to: {analysis_json}")
         
         # Return results
         response = {
@@ -101,6 +100,92 @@ def analyze():
         return jsonify({'error': str(e)}), 500
 
 
+def sanitize_filename(name):
+    """Convert session name to safe directory name"""
+    # Remove/replace unsafe characters
+    safe_name = re.sub(r'[<>:"/\\|?*]', '_', name)
+    safe_name = safe_name.strip()
+    return safe_name if safe_name else 'unnamed_session'
+
+
+@app.route('/save_recording', methods=['POST'])
+def save_recording():
+    """
+    Save recording data (audio + navigation) to file system
+    
+    Expected JSON:
+    {
+        "sessionName": "My Presentation",
+        "sessionId": 123,
+        "attemptNumber": 1,
+        "audioData": "base64_encoded_audio",
+        "navigationEvents": [...],
+        "videoData": "base64_encoded_video" (optional, for reference)
+    }
+    
+    Returns paths to saved files
+    """
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        # Extract required fields
+        session_name = data.get('sessionName', 'Unnamed Session')
+        session_id = data.get('sessionId')
+        attempt_number = data.get('attemptNumber', 1)
+        audio_base64 = data.get('audioData')
+        navigation_events = data.get('navigationEvents', [])
+        
+        if not audio_base64:
+            return jsonify({'error': 'No audio data provided'}), 400
+        
+        # Create directory structure: sessions/session_name/attempt_X/
+        safe_session_name = sanitize_filename(session_name)
+        session_dir = SESSIONS_DIR / f"{safe_session_name}_{session_id}"
+        attempt_dir = session_dir / f"attempt_{attempt_number}"
+        attempt_dir.mkdir(parents=True, exist_ok=True)
+        
+        print(f"\n💾 Saving recording to: {attempt_dir}")
+        
+        # Save audio file
+        audio_path = attempt_dir / 'audio.wav'
+        if ',' in audio_base64:
+            audio_base64 = audio_base64.split(',', 1)[1]
+        
+        audio_binary = base64.b64decode(audio_base64)
+        with open(audio_path, 'wb') as f:
+            f.write(audio_binary)
+        
+        print(f"✅ Audio saved: {audio_path}")
+        
+        # Save navigation events JSON
+        navigation_path = attempt_dir / 'navigation.json'
+        with open(navigation_path, 'w', encoding='utf-8') as f:
+            json.dump(navigation_events, f, indent=2)
+        
+        print(f"✅ Navigation data saved: {navigation_path}")
+        
+        # Return success with paths
+        response = {
+            'success': True,
+            'sessionDir': str(session_dir),
+            'attemptDir': str(attempt_dir),
+            'audioPath': str(audio_path),
+            'navigationPath': str(navigation_path),
+            'message': f'Recording saved successfully to {attempt_dir.name}'
+        }
+        
+        return jsonify(response)
+        
+    except Exception as e:
+        print(f"❌ Error saving recording: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
 if __name__ == '__main__':
     print("\n" + "="*80)
     print("PRESENTATION ANALYSIS SERVER")
@@ -108,8 +193,9 @@ if __name__ == '__main__':
     print("\nStarting Flask server...")
     print("API will be available at: http://localhost:5000")
     print("\nEndpoints:")
-    print("  GET  /health  - Health check")
-    print("  POST /analyze - Analyze audio")
+    print("  GET  /health         - Health check")
+    print("  POST /analyze        - Analyze audio")
+    print("  POST /save_recording - Save recording data to file system")
     print("\n" + "="*80)
     
     app.run(host='localhost', port=5000, debug=True)

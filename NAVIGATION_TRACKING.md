@@ -59,8 +59,13 @@ Each time a user changes pages during recording, the system captures:
    - Page timer resets for new page
 
 3. When **Stop Recording** is pressed:
-   - All navigation events are saved with the recording
-   - Data is stored in IndexedDB
+   - Audio is extracted from the video recording
+   - Navigation events are prepared for saving
+   - Both files are immediately saved to the file system via backend API
+   - Data is stored at: `sessions/SessionName_ID/attempt_X/`
+     - `audio.wav` - Extracted audio file
+     - `navigation.json` - PDF navigation events
+   - Video data is also saved to IndexedDB for playback in the browser
 
 ### Viewing Navigation Data
 When viewing a recorded attempt, the system displays:
@@ -92,16 +97,68 @@ Located in the attempt details view:
 
 ## Data Storage
 
-Navigation events are stored with each attempt in IndexedDB:
+### File System (for analysis)
+Audio and navigation data are saved to the file system at:
+```
+sessions/
+  SessionName_ID/
+    attempt_1/
+      audio.wav         - Audio extracted from video
+      navigation.json   - PDF navigation events
+    attempt_2/
+      audio.wav
+      navigation.json
+```
+
+### IndexedDB (for UI)
+Additional data stored in browser's IndexedDB for the user interface:
 ```javascript
 {
   sessionId: "...",
-  videoData: "...",
+  videoData: "...",  // For video playback in browser
   pdfData: "...",
   duration: 120,
   navigationEvents: [ /* array of events */ ]
 }
 ```
+
+### Navigation Events JSON Format
+The `navigation.json` file contains:
+```json
+[
+  {
+    "timestamp": 0,
+    "fromPage": null,
+    "toPage": 1,
+    "method": "start",
+    "duration": 0
+  },
+  {
+    "timestamp": 15,
+    "fromPage": 1,
+    "toPage": 2,
+    "method": "button",
+    "duration": 15
+  }
+]
+```
+
+## Backend Requirements
+
+The backend server must be running to save files to the file system:
+
+1. **Start the backend:**
+   ```bash
+   cd backend
+   python api_server.py
+   ```
+
+2. **Backend endpoint:** `POST http://localhost:5000/save_recording`
+
+3. **What happens if backend is not running:**
+   - Recording still saves to browser (IndexedDB)
+   - User gets a warning message
+   - Audio and navigation files are NOT saved to disk
 
 ## Console Logging
 

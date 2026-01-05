@@ -37,6 +37,7 @@ function App() {
   const mediaRecorderRef = useRef(null)
   const chunksRef = useRef([])
   const timerRef = useRef(null)
+  const recordingStartTime = useRef(null)
   
   // Navigation tracking
   const [navigationEvents, setNavigationEvents] = useState([])
@@ -160,13 +161,13 @@ function App() {
   const trackPageNavigation = (fromPage, toPage, method = 'button') => {
     if (!isRecording) return
     
-    const currentTime = recordingTime
+    const currentTime = parseFloat(recordingTime.toFixed(1))
     const event = {
       timestamp: currentTime,
       fromPage,
       toPage,
       method, // 'button' (prev/next), 'thumbnail', or 'direct'
-      duration: pageStartTimeRef.current ? currentTime - pageStartTimeRef.current : 0
+      duration: pageStartTimeRef.current ? parseFloat((currentTime - pageStartTimeRef.current).toFixed(1)) : 0
     }
     
     setNavigationEvents(prev => [...prev, event])
@@ -259,6 +260,15 @@ function App() {
         reader.onloadend = async () => {
           const base64data = reader.result
           
+          // Extract audio from video
+          console.log('📤 Extracting audio from video...')
+          const audioData = await extractAudioFromVideo(base64data)
+          
+          if (!audioData) {
+            alert('Failed to extract audio from recording')
+            return
+          }
+          
           let pdfData = null
           let fileName = 'presentation.pdf'
           if (file) {
@@ -271,7 +281,7 @@ function App() {
           }
           
           try {
-            // Save as attempt in current session (including navigation events)
+            // First, save to IndexedDB (for video playback in UI)
             const attempt = await saveAttempt({
               sessionId: currentSession.id,
               videoData: base64data,
@@ -281,13 +291,49 @@ function App() {
               navigationEvents: navigationEvents // Add navigation tracking data
             })
             
+            // Then, save audio + navigation to file system via backend
+            console.log('💾 Saving audio and navigation data to file system...')
+            try {
+              const response = await fetch('http://localhost:5000/save_recording', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  sessionName: currentSession.name,
+                  sessionId: currentSession.id,
+                  attemptNumber: attempt.id,
+                  audioData: audioData,
+                  navigationEvents: navigationEvents
+                })
+              })
+              
+              if (response.ok) {
+                const result = await response.json()
+                console.log('✅ Files saved to:', result.attemptDir)
+                
+                // Update attempt with audio file path
+                await updateAttempt(attempt.id, { 
+                  audioPath: result.audioPath,
+                  navigationPath: result.navigationPath 
+                })
+                
+                alert(`Recording saved successfully!\n\nFiles saved to: ${result.attemptDir}`)
+              } else {
+                console.error('Backend save failed')
+                alert('Recording saved to browser, but file system save failed. Check if backend is running.')
+              }
+            } catch (backendErr) {
+              console.error('Backend not available:', backendErr)
+              alert('Recording saved to browser, but backend is not running.\nAudio and navigation files were NOT saved to disk.')
+            }
+            
             // Update current attempt
             setCurrentAttempt(attempt)
             
             // Reload session to show new attempt
             await loadSession(currentSession.id)
             
-            alert('Recording saved successfully!')
           } catch (err) {
             console.error('Error saving recording:', err)
             alert('Error saving recording')
@@ -304,10 +350,12 @@ function App() {
       mediaRecorder.start(1000)
       setIsRecording(true)
       setRecordingTime(0)
+      recordingStartTime.current = Date.now()
 
       timerRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1)
-      }, 1000)
+        const elapsed = (Date.now() - recordingStartTime.current) / 1000
+        setRecordingTime(elapsed)
+      }, 100)
 
       screenStream.getVideoTracks()[0].onended = () => {
         stopRecording()
@@ -604,22 +652,24 @@ function App() {
       const useBackend = await checkBackendAvailable()
       
       if (useBackend) {
-        // Backend mode: Extract audio and send to server
+        // Backend mode: Use existing audio file
         console.log('🚀 Using backend analysis...')
-        const audioData = await extractAudioFromVideo(attempt.videoData)
         
-        if (!audioData) {
-          throw new Error('Failed to extract audio from video')
+        // Check if attempt has audio path (from file system save)
+        if (!attempt.audioPath) {
+          throw new Error('Audio file path not found. Please re-record with backend running.')
         }
         
-        // Send to backend
+        console.log('📁 Using audio file:', attempt.audioPath)
+        
+        // Send audio file path to backend
         const response = await fetch('http://localhost:5000/analyze', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            audioData: audioData,
+            audioPath: attempt.audioPath,
             enableTranscription: true
           })
         })
@@ -1022,8 +1072,9 @@ function App() {
                   className={`thumbnail ${idx + 1 === pageNumber ? 'active' : ''}`}
                   onClick={() => {
                     const newPage = idx + 1
+                    console.log(`Page button clicked: ${pageNumber} → ${newPage}, Recording: ${isRecording}`)
                     if (newPage !== pageNumber) {
-                      trackPageNavigation(pageNumber, newPage, 'thumbnail')
+                      trackPageNavigation(pageNumber, newPage, 'page-button')
                     }
                     setPageNumber(newPage)
                   }}
