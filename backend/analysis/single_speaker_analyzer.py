@@ -94,13 +94,63 @@ def detect_speech_segments(audio, sr, frame_length=2048, hop_length=512, thresho
     return segments
 
 
-def analyze_speaking_pace(segments, total_duration):
+def match_transcription_to_segments(merged_segments, transcription_segments, speaker_name=None):
+    """
+    Match transcription text to merged speech segments
+    
+    Args:
+        merged_segments: List of (start, end) tuples for merged segments
+        transcription_segments: Whisper transcription segments with text and timestamps
+        speaker_name: Optional speaker name to add to each segment
+    
+    Returns:
+        List of segments with transcription text added
+    """
+    segments_with_text = []
+    
+    for seg_id, (start, end) in enumerate(merged_segments):
+        # Find all transcription segments that overlap with this speech segment
+        matching_texts = []
+        
+        for trans_seg in transcription_segments:
+            trans_start = trans_seg['start']
+            trans_end = trans_seg['end']
+            
+            # Check if there's overlap
+            if trans_start < end and trans_end > start:
+                matching_texts.append(trans_seg['text'].strip())
+        
+        # Combine all matching texts
+        combined_text = ' '.join(matching_texts)
+        word_count = len(combined_text.split()) if combined_text else 0
+        
+        segment_data = {
+            'start': float(start),
+            'end': float(end),
+            'duration': float(end - start),
+            'text': combined_text,
+            'word_count': word_count,
+            'segment_id': f"seg_{seg_id:04d}"
+        }
+        
+        # Add speaker if provided
+        if speaker_name:
+            segment_data['speaker'] = speaker_name
+        
+        segments_with_text.append(segment_data)
+    
+    return segments_with_text
+
+
+def analyze_speaking_pace(segments, total_duration, transcription_segments=None, speaker_name=None):
     """
     Analyze speaking pace and pauses
     
     Args:
         segments: List of (start, end) speech segments
         total_duration: Total audio duration
+        transcription_segments: Optional Whisper transcription segments to match with speech
+        speaker_name: Optional speaker name to add to each segment
     
     Returns:
         dict with pacing metrics
@@ -113,21 +163,64 @@ def analyze_speaking_pace(segments, total_duration):
             'total_silence_time': total_duration,
             'speaking_percentage': 0,
             'num_segments': 0,
-            'pauses': []
+            'pauses': [],
+            'num_long_pauses': 0,
+            'segments': []
         }
     
     # Calculate total speaking time
     speaking_time = sum(end - start for start, end in segments)
     silence_time = total_duration - speaking_time
     
-    # Find pauses (gaps between segments)
-    pauses = []
+    # Merge segments with pauses ≤2 seconds between them
+    merged_segments = []
+    if segments:
+        current_start = segments[0][0]
+        current_end = segments[0][1]
+        
+        for i in range(1, len(segments)):
+            pause_duration = segments[i][0] - current_end
+            
+            if pause_duration <= 2.0:
+                # Merge with current segment
+                current_end = segments[i][1]
+            else:
+                # Save current segment if it's >= 10 seconds
+                if current_end - current_start >= 10.0:
+                    merged_segments.append((current_start, current_end))
+                # Start new segment
+                current_start = segments[i][0]
+                current_end = segments[i][1]
+        
+        # Don't forget the last segment
+        if current_end - current_start >= 10.0:
+            merged_segments.append((current_start, current_end))
+    
+    # Match transcription to merged segments if available
+    segments_with_text = []
+    if transcription_segments:
+        segments_with_text = match_transcription_to_segments(merged_segments, transcription_segments, speaker_name)
+    else:
+        # Create segments without text
+        for seg_id, (start, end) in enumerate(merged_segments):
+            segment_data = {
+                'start': float(start),
+                'end': float(end),
+                'duration': float(end - start),
+                'segment_id': f"seg_{seg_id:04d}"
+            }
+            if speaker_name:
+                segment_data['speaker'] = speaker_name
+            segments_with_text.append(segment_data)
+    
+    # Find long pauses (gaps ≥5 seconds between original segments)
+    long_pauses = []
     for i in range(len(segments) - 1):
         pause_start = segments[i][1]
         pause_end = segments[i + 1][0]
         pause_duration = pause_end - pause_start
-        if pause_duration > 1.0:  # Only count pauses > 1 second
-            pauses.append({
+        if pause_duration >= 5.0:  # Long pause defined as ≥5 seconds
+            long_pauses.append({
                 'start': pause_start,
                 'duration': pause_duration
             })
@@ -136,16 +229,17 @@ def analyze_speaking_pace(segments, total_duration):
         'total_speaking_time': speaking_time,
         'total_silence_time': silence_time,
         'speaking_percentage': (speaking_time / total_duration * 100) if total_duration > 0 else 0,
-        'num_segments': len(segments),
-        'num_long_pauses': len(pauses),
-        'pauses': pauses,
-        'avg_segment_length': speaking_time / len(segments) if segments else 0
+        'num_segments': len(merged_segments),
+        'num_long_pauses': len(long_pauses),
+        'pauses': long_pauses,
+        'avg_segment_length': sum(end - start for start, end in merged_segments) / len(merged_segments) if merged_segments else 0,
+        'segments': segments_with_text
     }
     
     print(f"  ✓ Speaking time: {speaking_time:.1f}s ({metrics['speaking_percentage']:.1f}%)")
     print(f"  ✓ Silence time: {silence_time:.1f}s")
-    print(f"  ✓ Speech segments: {len(segments)}")
-    print(f"  ✓ Long pauses (>1s): {len(pauses)}")
+    print(f"  ✓ Speech segments: {len(merged_segments)}")
+    print(f"  ✓ Long pauses (≥5s): {len(long_pauses)}")
     
     return metrics
 
@@ -242,7 +336,8 @@ def analyze_audio_quality(audio, sr):
 def analyze_single_speaker_presentation(
     audio_path,
     output_json_path,
-    enable_transcription=True
+    enable_transcription=True,
+    speaker_name=None
 ):
     """
     Analyze a single-speaker presentation
@@ -251,6 +346,7 @@ def analyze_single_speaker_presentation(
         audio_path: Path to audio file
         output_json_path: Path to save JSON results
         enable_transcription: Whether to transcribe audio
+        speaker_name: Optional name of the speaker to include in segment data
     
     Returns:
         dict with analysis results
@@ -264,30 +360,38 @@ def analyze_single_speaker_presentation(
         print(f"\n📂 Loading audio: {os.path.basename(audio_path)}")
         audio, sr, duration = convert_to_mono_wav(audio_path, audio_path)
         
+        # Transcribe if enabled (do this first to get segments)
+        transcription = None
+        transcription_segments = None
+        if enable_transcription:
+            transcription = transcribe_audio(audio_path)
+            if transcription and transcription.get('success'):
+                transcription_segments = transcription.get('segments', [])
+        
         # Detect speech segments
         segments = detect_speech_segments(audio, sr)
         
-        # Analyze pacing
-        pacing = analyze_speaking_pace(segments, duration)
+        # Analyze pacing (with transcription if available)
+        pacing = analyze_speaking_pace(segments, duration, transcription_segments, speaker_name)
         
         # Analyze quality
         quality = analyze_audio_quality(audio, sr)
-        
-        # Transcribe if enabled
-        transcription = None
-        if enable_transcription:
-            transcription = transcribe_audio(audio_path)
         
         # Create result
         result = {
             'audio_file': audio_path,
             'duration': duration,
             'sample_rate': sr,
-            'speech_segments': [
-                {'start': float(start), 'end': float(end), 'duration': float(end - start)}
-                for start, end in segments
-            ],
-            'pacing_metrics': pacing,
+            'speech_segments': pacing['segments'],  # Use segments with text
+            'pacing_metrics': {
+                'total_speaking_time': pacing['total_speaking_time'],
+                'total_silence_time': pacing['total_silence_time'],
+                'speaking_percentage': pacing['speaking_percentage'],
+                'num_segments': pacing['num_segments'],
+                'num_long_pauses': pacing['num_long_pauses'],
+                'pauses': pacing['pauses'],
+                'avg_segment_length': pacing['avg_segment_length']
+            },
             'audio_quality': quality,
             'transcription': transcription
         }
@@ -309,7 +413,7 @@ def analyze_single_speaker_presentation(
         print(f"Speaking: {pacing['total_speaking_time']:.1f}s ({pacing['speaking_percentage']:.1f}%)")
         print(f"Silence: {pacing['total_silence_time']:.1f}s")
         print(f"Speech segments: {pacing['num_segments']}")
-        print(f"Long pauses: {pacing['num_long_pauses']}")
+        print(f"Long pauses (≥5s): {pacing['num_long_pauses']}")
         
         if transcription and transcription['success']:
             print(f"\nTranscription preview:")

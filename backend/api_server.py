@@ -10,6 +10,7 @@ import tempfile
 import os
 import sys
 from pathlib import Path
+from datetime import datetime
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
@@ -49,46 +50,50 @@ def analyze():
         
         print(f"\n📨 Received audio data: {len(audio_base64)} characters")
         
-        # Create temporary directory for analysis
-        with tempfile.TemporaryDirectory() as temp_dir:
-            audio_path = os.path.join(temp_dir, 'audio.wav')
-            analysis_json = os.path.join(temp_dir, 'analysis.json')
-            
-            # Save audio data to file
-            if ',' in audio_base64:
-                audio_base64 = audio_base64.split(',', 1)[1]
-            
-            audio_binary = base64.b64decode(audio_base64)
-            with open(audio_path, 'wb') as f:
-                f.write(audio_binary)
-            
-            print(f"💾 Saved audio to temp file: {audio_path}")
-            
-            # Analyze
-            print(f"🔍 Starting analysis...")
-            result = analyze_single_speaker_presentation(
-                audio_path,
-                analysis_json,
-                enable_transcription=enable_transcription
-            )
-            
-            # Return results
-            response = {
-                'success': True,
-                'duration': result['duration'],
-                'pacing': {
-                    'speakingTime': result['pacing_metrics']['total_speaking_time'],
-                    'silenceTime': result['pacing_metrics']['total_silence_time'],
-                    'speakingPercentage': result['pacing_metrics']['speaking_percentage'],
-                    'segments': result['pacing_metrics']['num_segments'],
-                    'longPauses': result['pacing_metrics']['num_long_pauses'],
-                },
-                'quality': result['audio_quality'],
-                'transcription': result['transcription']['text'] if result['transcription'] and result['transcription']['success'] else None
-            }
-            
-            print(f"✅ Analysis complete!")
-            return jsonify(response)
+        # Create analysis output directory in project folder
+        output_dir = project_root / 'analysis_results' / datetime.now().strftime('%Y%m%d_%H%M%S')
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        audio_path = output_dir / 'audio.wav'
+        analysis_json = output_dir / 'analysis.json'
+        
+        # Save audio data to file
+        if ',' in audio_base64:
+            audio_base64 = audio_base64.split(',', 1)[1]
+        
+        audio_binary = base64.b64decode(audio_base64)
+        with open(audio_path, 'wb') as f:
+            f.write(audio_binary)
+        
+        print(f"💾 Saved audio to: {audio_path}")
+        
+        # Analyze
+        print(f"🔍 Starting analysis...")
+        result = analyze_single_speaker_presentation(
+            str(audio_path),
+            str(analysis_json),
+            enable_transcription=enable_transcription
+        )
+        
+        print(f"✅ Analysis complete! Results saved to: {output_dir}")
+        
+        # Return results
+        response = {
+            'success': True,
+            'duration': result['duration'],
+            'analysisPath': str(analysis_json),  # Include path in response
+            'pacing': {
+                'speakingTime': result['pacing_metrics']['total_speaking_time'],
+                'silenceTime': result['pacing_metrics']['total_silence_time'],
+                'speakingPercentage': result['pacing_metrics']['speaking_percentage'],
+                'segments': result['pacing_metrics']['num_segments'],
+                'longPauses': result['pacing_metrics']['num_long_pauses'],
+            },
+            'quality': result['audio_quality'],
+            'transcription': result['transcription']['text'] if result['transcription'] and result['transcription']['success'] else None
+        }
+        
+        return jsonify(response)
         
     except Exception as e:
         print(f"❌ Error: {str(e)}")

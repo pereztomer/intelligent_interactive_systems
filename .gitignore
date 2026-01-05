@@ -17,6 +17,9 @@ venv/
 *.pyc
 __pycache__/
 
+# Analysis results
+analysis_results/
+
 # Environment variables (contains tokens!)
 .env
 
