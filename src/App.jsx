@@ -41,6 +41,7 @@ function App() {
   
   // Navigation tracking
   const [navigationEvents, setNavigationEvents] = useState([])
+  const navigationEventsRef = useRef([])
   const pageStartTimeRef = useRef(null)
   
   // Analysis state
@@ -162,15 +163,20 @@ function App() {
     if (!isRecording) return
     
     const currentTime = parseFloat(recordingTime.toFixed(1))
+    const previousTime = pageStartTimeRef.current !== null ? pageStartTimeRef.current : 0
+    const duration = parseFloat((currentTime - previousTime).toFixed(1))
+    
     const event = {
       timestamp: currentTime,
       fromPage,
       toPage,
-      method, // 'button' (prev/next), 'thumbnail', or 'direct'
-      duration: pageStartTimeRef.current ? parseFloat((currentTime - pageStartTimeRef.current).toFixed(1)) : 0
+      method, // 'button' (prev/next), 'page-button', or 'start'
+      duration: duration
     }
     
+    // Update both state and ref
     setNavigationEvents(prev => [...prev, event])
+    navigationEventsRef.current = [...navigationEventsRef.current, event]
     pageStartTimeRef.current = currentTime
     
     console.log('Navigation tracked:', event)
@@ -211,6 +217,7 @@ function App() {
     try {
       // Initialize navigation tracking
       setNavigationEvents([])
+      navigationEventsRef.current = []
       pageStartTimeRef.current = 0
       
       // Add initial page event
@@ -222,6 +229,7 @@ function App() {
         duration: 0
       }
       setNavigationEvents([initialEvent])
+      navigationEventsRef.current = [initialEvent]
       
       const screenStream = await navigator.mediaDevices.getDisplayMedia({
         video: { mediaSource: 'screen' },
@@ -293,6 +301,12 @@ function App() {
             
             // Then, save audio + navigation to file system via backend
             console.log('💾 Saving audio and navigation data to file system...')
+            console.log('Navigation events to save:', navigationEventsRef.current)
+            
+            // Calculate session-specific attempt number (count attempts in this session)
+            const sessionAttemptNumber = (currentSession.attempts?.length || 0) + 1
+            console.log(`Session attempt number: ${sessionAttemptNumber}`)
+            
             try {
               const response = await fetch('http://localhost:5000/save_recording', {
                 method: 'POST',
@@ -302,9 +316,9 @@ function App() {
                 body: JSON.stringify({
                   sessionName: currentSession.name,
                   sessionId: currentSession.id,
-                  attemptNumber: attempt.id,
+                  attemptNumber: sessionAttemptNumber,
                   audioData: audioData,
-                  navigationEvents: navigationEvents
+                  navigationEvents: navigationEventsRef.current
                 })
               })
               
@@ -388,8 +402,9 @@ function App() {
   }, [])
 
   const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
+    const roundedSeconds = Math.floor(seconds)
+    const mins = Math.floor(roundedSeconds / 60)
+    const secs = roundedSeconds % 60
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
   }
 
