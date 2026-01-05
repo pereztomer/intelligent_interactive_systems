@@ -484,11 +484,11 @@ function App() {
     
     lines.push('')
     lines.push('🔊 AUDIO QUALITY:')
-    lines.push(`   RMS Energy: ${result.quality.rms_energy.toFixed(4)}`)
-    if (result.quality.clipping_detected) {
-      lines.push('   ⚠️  Clipping detected - lower your mic volume')
+    lines.push(`   Volume level: ${result.quality.volume_level.toFixed(4)}`)
+    if (result.quality.volume_too_high) {
+      lines.push('   ⚠️  Volume too high - lower your mic volume')
     } else {
-      lines.push('   ✅ No clipping detected')
+      lines.push('   ✅ Volume level is good')
     }
     
     if (result.transcription) {

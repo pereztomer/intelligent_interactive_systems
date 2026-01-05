@@ -172,6 +172,11 @@ def analyze_speaking_pace(segments, total_duration, transcription_segments=None,
     speaking_time = sum(end - start for start, end in segments)
     silence_time = total_duration - speaking_time
     
+    # Adapt minimum segment length based on recording duration
+    # For short recordings (<30s), use 5 seconds minimum
+    # For longer recordings, use 10 seconds minimum
+    min_segment_length = 5.0 if total_duration < 30.0 else 10.0
+    
     # Merge segments with pauses ≤2 seconds between them
     merged_segments = []
     if segments:
@@ -185,15 +190,15 @@ def analyze_speaking_pace(segments, total_duration, transcription_segments=None,
                 # Merge with current segment
                 current_end = segments[i][1]
             else:
-                # Save current segment if it's >= 10 seconds
-                if current_end - current_start >= 10.0:
+                # Save current segment if it meets minimum length
+                if current_end - current_start >= min_segment_length:
                     merged_segments.append((current_start, current_end))
                 # Start new segment
                 current_start = segments[i][0]
                 current_end = segments[i][1]
         
         # Don't forget the last segment
-        if current_end - current_start >= 10.0:
+        if current_end - current_start >= min_segment_length:
             merged_segments.append((current_start, current_end))
     
     # Match transcription to merged segments if available
@@ -270,11 +275,21 @@ def transcribe_audio(audio_path, language='en'):
         print(f"  ✓ Transcription complete")
         print(f"  ✓ Language: {language}")
         
+        # Simplify segments by removing technical Whisper metadata
+        simplified_segments = []
+        for seg in result['segments']:
+            simplified_segments.append({
+                'id': seg['id'],
+                'start': seg['start'],
+                'end': seg['end'],
+                'text': seg['text']
+            })
+        
         return {
             'success': True,
             'text': result['text'],
             'language': language,
-            'segments': result['segments']
+            'segments': simplified_segments
         }
     
     except ImportError:
@@ -293,41 +308,31 @@ def transcribe_audio(audio_path, language='en'):
 
 def analyze_audio_quality(audio, sr):
     """
-    Analyze audio quality metrics
+    Analyze audio quality metrics (simplified for pedagogical feedback)
     
     Args:
         audio: Audio signal
         sr: Sample rate
     
     Returns:
-        dict with quality metrics
+        dict with simplified quality metrics
     """
     print("\n🎚️  Analyzing audio quality...")
     
-    # RMS energy (volume)
+    # RMS energy (volume) - useful for feedback
     rms = np.sqrt(np.mean(audio**2))
     
-    # Peak amplitude
+    # Peak amplitude - check for clipping
     peak = np.abs(audio).max()
     
-    # Zero crossing rate (roughness indicator)
-    zcr = librosa.feature.zero_crossing_rate(audio)[0].mean()
-    
-    # Spectral centroid (brightness)
-    spectral_centroids = librosa.feature.spectral_centroid(y=audio, sr=sr)[0]
-    avg_centroid = np.mean(spectral_centroids)
-    
+    # Simple quality metrics for user feedback
     metrics = {
-        'rms_energy': float(rms),
-        'peak_amplitude': float(peak),
-        'zero_crossing_rate': float(zcr),
-        'spectral_centroid': float(avg_centroid),
-        'clipping_detected': bool(peak > 0.95)
+        'volume_level': float(rms),
+        'volume_too_high': bool(peak > 0.95)
     }
     
-    print(f"  ✓ RMS Energy: {rms:.4f}")
-    print(f"  ✓ Peak Amplitude: {peak:.4f}")
-    if metrics['clipping_detected']:
+    print(f"  ✓ Volume level: {rms:.4f}")
+    if metrics['volume_too_high']:
         print("  ⚠️  Warning: Audio clipping detected (volume too high)")
     
     return metrics
@@ -377,11 +382,9 @@ def analyze_single_speaker_presentation(
         # Analyze quality
         quality = analyze_audio_quality(audio, sr)
         
-        # Create result
+        # Create result (simplified - removed technical fields)
         result = {
-            'audio_file': audio_path,
             'duration': duration,
-            'sample_rate': sr,
             'speech_segments': pacing['segments'],  # Use segments with text
             'pacing_metrics': {
                 'total_speaking_time': pacing['total_speaking_time'],
@@ -393,7 +396,10 @@ def analyze_single_speaker_presentation(
                 'avg_segment_length': pacing['avg_segment_length']
             },
             'audio_quality': quality,
-            'transcription': transcription
+            'transcription': {
+                'text': transcription['text'],
+                'language': transcription['language']
+            } if transcription and transcription['success'] else None
         }
         
         # Save JSON
