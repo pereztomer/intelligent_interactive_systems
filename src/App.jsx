@@ -38,6 +38,10 @@ function App() {
   const chunksRef = useRef([])
   const timerRef = useRef(null)
   
+  // Navigation tracking
+  const [navigationEvents, setNavigationEvents] = useState([])
+  const pageStartTimeRef = useRef(null)
+  
   // Analysis state
   const [pyodide, setPyodide] = useState(null)
   const [analyzing, setAnalyzing] = useState({})
@@ -152,12 +156,41 @@ function App() {
     }
   }
 
+  // Track page navigation
+  const trackPageNavigation = (fromPage, toPage, method = 'button') => {
+    if (!isRecording) return
+    
+    const currentTime = recordingTime
+    const event = {
+      timestamp: currentTime,
+      fromPage,
+      toPage,
+      method, // 'button' (prev/next), 'thumbnail', or 'direct'
+      duration: pageStartTimeRef.current ? currentTime - pageStartTimeRef.current : 0
+    }
+    
+    setNavigationEvents(prev => [...prev, event])
+    pageStartTimeRef.current = currentTime
+    
+    console.log('Navigation tracked:', event)
+  }
+
   const goToPrevPage = () => {
-    setPageNumber((prev) => Math.max(prev - 1, 1))
+    const currentPage = pageNumber
+    const newPage = Math.max(pageNumber - 1, 1)
+    if (currentPage !== newPage) {
+      trackPageNavigation(currentPage, newPage, 'button')
+    }
+    setPageNumber(newPage)
   }
 
   const goToNextPage = () => {
-    setPageNumber((prev) => Math.min(prev + 1, numPages))
+    const currentPage = pageNumber
+    const newPage = Math.min(pageNumber + 1, numPages)
+    if (currentPage !== newPage) {
+      trackPageNavigation(currentPage, newPage, 'button')
+    }
+    setPageNumber(newPage)
   }
 
   const zoomIn = () => {
@@ -175,6 +208,20 @@ function App() {
   // Recording functions
   const startRecording = async () => {
     try {
+      // Initialize navigation tracking
+      setNavigationEvents([])
+      pageStartTimeRef.current = 0
+      
+      // Add initial page event
+      const initialEvent = {
+        timestamp: 0,
+        fromPage: null,
+        toPage: pageNumber,
+        method: 'start',
+        duration: 0
+      }
+      setNavigationEvents([initialEvent])
+      
       const screenStream = await navigator.mediaDevices.getDisplayMedia({
         video: { mediaSource: 'screen' },
         audio: true
@@ -224,13 +271,14 @@ function App() {
           }
           
           try {
-            // Save as attempt in current session
+            // Save as attempt in current session (including navigation events)
             const attempt = await saveAttempt({
               sessionId: currentSession.id,
               videoData: base64data,
               pdfData: pdfData,
               fileName: fileName,
-              duration: recordingTime
+              duration: recordingTime,
+              navigationEvents: navigationEvents // Add navigation tracking data
             })
             
             // Update current attempt
@@ -972,7 +1020,13 @@ function App() {
                 <div
                   key={idx + 1}
                   className={`thumbnail ${idx + 1 === pageNumber ? 'active' : ''}`}
-                  onClick={() => setPageNumber(idx + 1)}
+                  onClick={() => {
+                    const newPage = idx + 1
+                    if (newPage !== pageNumber) {
+                      trackPageNavigation(pageNumber, newPage, 'thumbnail')
+                    }
+                    setPageNumber(newPage)
+                  }}
                 >
                   {idx + 1}
                 </div>
@@ -1013,6 +1067,39 @@ function App() {
                   <div className="attempt-video-info">
                     <p><strong>Duration:</strong> {formatTime(currentAttempt.duration || 0)}</p>
                     <p><strong>Recorded:</strong> {formatDate(currentAttempt.timestamp)}</p>
+                    {currentAttempt.navigationEvents && currentAttempt.navigationEvents.length > 0 && (
+                      <p><strong>Page Navigations:</strong> {currentAttempt.navigationEvents.length - 1} time(s)</p>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {currentAttempt.navigationEvents && currentAttempt.navigationEvents.length > 0 && (
+                <div className="navigation-tracking-box">
+                  <h3>📄 Page Navigation Timeline</h3>
+                  <div className="navigation-events">
+                    {currentAttempt.navigationEvents.map((event, idx) => (
+                      <div key={idx} className="navigation-event">
+                        <div className="event-time">{formatTime(event.timestamp)}</div>
+                        <div className="event-details">
+                          {event.method === 'start' ? (
+                            <>
+                              <strong>Started on Page {event.toPage}</strong>
+                            </>
+                          ) : (
+                            <>
+                              <strong>Page {event.fromPage} → {event.toPage}</strong>
+                              <span className="event-method">via {event.method}</span>
+                              {event.duration > 0 && (
+                                <span className="event-duration">
+                                  (spent {formatTime(event.duration)} on page {event.fromPage})
+                                </span>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
