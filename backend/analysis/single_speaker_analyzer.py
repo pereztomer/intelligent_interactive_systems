@@ -94,17 +94,84 @@ def detect_speech_segments(audio, sr, frame_length=2048, hop_length=512, thresho
     return segments
 
 
-def match_transcription_to_segments(merged_segments, transcription_segments, speaker_name=None):
+def extract_segment_audio_features(audio, sr, start_time, end_time, text=""):
     """
-    Match transcription text to merged speech segments
+    Extract audio features for a specific segment
+    
+    Args:
+        audio: Full audio signal
+        sr: Sample rate
+        start_time: Segment start time in seconds
+        end_time: Segment end time in seconds
+        text: Transcribed text for the segment
+    
+    Returns:
+        dict with audio features
+    """
+    # Extract segment audio
+    start_sample = int(start_time * sr)
+    end_sample = int(end_time * sr)
+    segment_audio = audio[start_sample:end_sample]
+    
+    if len(segment_audio) == 0:
+        return None
+    
+    # Pitch analysis (using fundamental frequency)
+    try:
+        pitches, magnitudes = librosa.piptrack(y=segment_audio, sr=sr, fmin=75, fmax=400)
+        # Extract pitch values where magnitude is above threshold
+        pitch_values = []
+        for t in range(pitches.shape[1]):
+            index = magnitudes[:, t].argmax()
+            pitch = pitches[index, t]
+            if pitch > 0:
+                pitch_values.append(pitch)
+        
+        pitch_mean = float(np.mean(pitch_values)) if pitch_values else 0.0
+        pitch_range = float(np.max(pitch_values) - np.min(pitch_values)) if len(pitch_values) > 1 else 0.0
+    except:
+        pitch_mean = 0.0
+        pitch_range = 0.0
+    
+    # Energy variance
+    rms = librosa.feature.rms(y=segment_audio)[0]
+    energy_variance = float(np.var(rms))
+    
+    # Words per minute
+    duration_minutes = (end_time - start_time) / 60.0
+    word_count = len(text.split()) if text else 0
+    words_per_minute = (word_count / duration_minutes) if duration_minutes > 0 else 0.0
+    
+    # Detect filler words
+    filler_word_list = ['um', 'uh', 'like', 'you know', 'so', 'actually', 'basically', 'literally']
+    detected_fillers = []
+    text_lower = text.lower() if text else ""
+    for filler in filler_word_list:
+        if filler in text_lower:
+            detected_fillers.append(filler)
+    
+    return {
+        'pitch_mean_hz': round(pitch_mean, 1),
+        'pitch_range_hz': round(pitch_range, 1),
+        'energy_variance': round(energy_variance, 6),
+        'words_per_minute': round(words_per_minute, 1),
+        'filler_words': detected_fillers
+    }
+
+
+def match_transcription_to_segments(merged_segments, transcription_segments, speaker_name=None, audio=None, sr=None):
+    """
+    Match transcription text to merged speech segments and extract audio features
     
     Args:
         merged_segments: List of (start, end) tuples for merged segments
         transcription_segments: Whisper transcription segments with text and timestamps
         speaker_name: Optional speaker name to add to each segment
+        audio: Audio signal for feature extraction
+        sr: Sample rate for feature extraction
     
     Returns:
-        List of segments with transcription text added
+        List of segments with transcription text and audio features
     """
     segments_with_text = []
     
@@ -125,24 +192,30 @@ def match_transcription_to_segments(merged_segments, transcription_segments, spe
         word_count = len(combined_text.split()) if combined_text else 0
         
         segment_data = {
+            'segment_id': f"seg_{seg_id:04d}",
             'start': float(start),
             'end': float(end),
             'duration': float(end - start),
             'text': combined_text,
-            'word_count': word_count,
-            'segment_id': f"seg_{seg_id:04d}"
+            'word_count': word_count
         }
         
         # Add speaker if provided
         if speaker_name:
             segment_data['speaker'] = speaker_name
         
+        # Extract audio features if audio is provided
+        if audio is not None and sr is not None:
+            audio_features = extract_segment_audio_features(audio, sr, start, end, combined_text)
+            if audio_features:
+                segment_data['audio_features'] = audio_features
+        
         segments_with_text.append(segment_data)
     
     return segments_with_text
 
 
-def analyze_speaking_pace(segments, total_duration, transcription_segments=None, speaker_name=None):
+def analyze_speaking_pace(segments, total_duration, transcription_segments=None, speaker_name=None, audio=None, sr=None):
     """
     Analyze speaking pace and pauses
     
@@ -151,6 +224,8 @@ def analyze_speaking_pace(segments, total_duration, transcription_segments=None,
         total_duration: Total audio duration
         transcription_segments: Optional Whisper transcription segments to match with speech
         speaker_name: Optional speaker name to add to each segment
+        audio: Audio signal for feature extraction
+        sr: Sample rate for feature extraction
     
     Returns:
         dict with pacing metrics
@@ -204,18 +279,27 @@ def analyze_speaking_pace(segments, total_duration, transcription_segments=None,
     # Match transcription to merged segments if available
     segments_with_text = []
     if transcription_segments:
-        segments_with_text = match_transcription_to_segments(merged_segments, transcription_segments, speaker_name)
+        segments_with_text = match_transcription_to_segments(
+            merged_segments, transcription_segments, speaker_name, audio, sr
+        )
     else:
         # Create segments without text
         for seg_id, (start, end) in enumerate(merged_segments):
             segment_data = {
+                'segment_id': f"seg_{seg_id:04d}",
                 'start': float(start),
                 'end': float(end),
-                'duration': float(end - start),
-                'segment_id': f"seg_{seg_id:04d}"
+                'duration': float(end - start)
             }
             if speaker_name:
                 segment_data['speaker'] = speaker_name
+            
+            # Extract audio features even without transcription
+            if audio is not None and sr is not None:
+                audio_features = extract_segment_audio_features(audio, sr, start, end, "")
+                if audio_features:
+                    segment_data['audio_features'] = audio_features
+            
             segments_with_text.append(segment_data)
     
     # Find long pauses (gaps ≥5 seconds between original segments)
@@ -376,11 +460,8 @@ def analyze_single_speaker_presentation(
         # Detect speech segments
         segments = detect_speech_segments(audio, sr)
         
-        # Analyze pacing (with transcription if available)
-        pacing = analyze_speaking_pace(segments, duration, transcription_segments, speaker_name)
-        
-        # Analyze quality
-        quality = analyze_audio_quality(audio, sr)
+        # Analyze pacing (with transcription and audio features if available)
+        pacing = analyze_speaking_pace(segments, duration, transcription_segments, speaker_name, audio, sr)
         
         # Create result (simplified - removed technical fields)
         result = {
@@ -395,7 +476,6 @@ def analyze_single_speaker_presentation(
                 'pauses': pacing['pauses'],
                 'avg_segment_length': pacing['avg_segment_length']
             },
-            'audio_quality': quality,
             'transcription': {
                 'text': transcription['text'],
                 'language': transcription['language']

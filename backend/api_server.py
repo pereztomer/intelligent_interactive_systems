@@ -89,7 +89,6 @@ def analyze():
                 'segments': result['pacing_metrics']['num_segments'],
                 'longPauses': result['pacing_metrics']['num_long_pauses'],
             },
-            'quality': result['audio_quality'],
             'transcription': result['transcription']['text'] if result['transcription'] else None
         }
         

@@ -482,15 +482,6 @@ function App() {
       lines.push('⚠️  Many long pauses detected - work on smoother transitions')
     }
     
-    lines.push('')
-    lines.push('🔊 AUDIO QUALITY:')
-    lines.push(`   Volume level: ${result.quality.volume_level.toFixed(4)}`)
-    if (result.quality.volume_too_high) {
-      lines.push('   ⚠️  Volume too high - lower your mic volume')
-    } else {
-      lines.push('   ✅ Volume level is good')
-    }
-    
     if (result.transcription) {
       lines.push('')
       lines.push('📝 TRANSCRIPTION:')
