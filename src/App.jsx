@@ -319,6 +319,8 @@ function App() {
                   attemptNumber: sessionAttemptNumber,
                   audioData: audioData,
                   videoData: base64data,
+                  pdfData: pdfData,
+                  fileName: fileName,
                   navigationEvents: navigationEventsRef.current
                 })
               })
@@ -331,6 +333,7 @@ function App() {
                 await updateAttempt(attempt.id, { 
                   audioPath: result.audioPath,
                   videoPath: result.videoPath,
+                  pdfPath: result.pdfPath,
                   navigationPath: result.navigationPath 
                 })
                 

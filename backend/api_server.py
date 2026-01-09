@@ -111,7 +111,7 @@ def sanitize_filename(name):
 @app.route('/save_recording', methods=['POST'])
 def save_recording():
     """
-    Save recording data (audio + video + navigation) to file system
+    Save recording data (audio + video + PDF + navigation) to file system
     
     Expected JSON:
     {
@@ -120,6 +120,8 @@ def save_recording():
         "attemptNumber": 1,
         "audioData": "base64_encoded_audio",
         "videoData": "base64_encoded_video" (optional),
+        "pdfData": "base64_encoded_pdf" (optional),
+        "fileName": "presentation.pdf" (optional),
         "navigationEvents": [...]
     }
     
@@ -137,6 +139,8 @@ def save_recording():
         attempt_number = data.get('attemptNumber', 1)
         audio_base64 = data.get('audioData')
         video_base64 = data.get('videoData')
+        pdf_base64 = data.get('pdfData')
+        pdf_file_name = data.get('fileName', 'presentation.pdf')
         navigation_events = data.get('navigationEvents', [])
         
         if not audio_base64:
@@ -174,6 +178,21 @@ def save_recording():
             
             print(f"✅ Video saved: {video_path}")
         
+        # Save PDF file (if provided)
+        pdf_path = None
+        if pdf_base64:
+            # Use provided filename or default to 'presentation.pdf'
+            pdf_filename = pdf_file_name if pdf_file_name.endswith('.pdf') else f"{pdf_file_name}.pdf"
+            pdf_path = attempt_dir / pdf_filename
+            if ',' in pdf_base64:
+                pdf_base64 = pdf_base64.split(',', 1)[1]
+            
+            pdf_binary = base64.b64decode(pdf_base64)
+            with open(pdf_path, 'wb') as f:
+                f.write(pdf_binary)
+            
+            print(f"✅ PDF saved: {pdf_path}")
+        
         # Save navigation events JSON
         navigation_path = attempt_dir / 'navigation.json'
         with open(navigation_path, 'w', encoding='utf-8') as f:
@@ -188,6 +207,7 @@ def save_recording():
             'attemptDir': str(attempt_dir),
             'audioPath': str(audio_path),
             'videoPath': str(video_path) if video_path else None,
+            'pdfPath': str(pdf_path) if pdf_path else None,
             'navigationPath': str(navigation_path),
             'message': f'Recording saved successfully to {attempt_dir.name}'
         }
