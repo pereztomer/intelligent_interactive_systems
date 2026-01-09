@@ -826,8 +826,17 @@
 .session-feedback-box p {
   margin: 0 0 1rem 0;
   color: #4a5568;
-  font-size: 1rem;
-  line-height: 1.6;
+  font-size: 1.4rem;
+  line-height: 1.8;
+  font-weight: 500;
+}
+
+.session-feedback-content p {
+  margin: 0.8rem 0;
+  color: #4a5568;
+  font-size: 1.4rem;
+  line-height: 1.8;
+  font-weight: 500;
 }
 
 .generate-feedback-button,
@@ -947,11 +956,13 @@
   font-size: 1.3rem;
 }
 
-.attempt-feedback-box p {
+.attempt-feedback-box p,
+.attempt-feedback-box pre {
   margin: 0;
   color: #4a5568;
-  font-size: 1rem;
-  line-height: 1.6;
+  font-size: 1.4rem;
+  line-height: 1.8;
+  font-weight: 500;
 }
 
 .attempt-details-section {

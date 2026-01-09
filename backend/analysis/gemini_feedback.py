@@ -83,14 +83,70 @@ SLIDE NAVIGATION:
     
     prompt += """
 
-Provide concise, specific feedback (max 300 words) focusing on:
-1. Pacing and timing issues
-2. Filler word usage
-3. Speaking clarity and speed
-4. Slide navigation patterns
-5. Overall presentation flow
+Provide VERY SHORT feedback: exactly 2-3 main points, each point a single short sentence.
+Focus on the most critical issues from:
+- Pacing and timing
+- Filler word usage
+- Speaking clarity and speed
+- Slide navigation patterns
 
-Format as clear, actionable recommendations."""
+Format: One sentence per point, each point on a new line, no explanations."""
+
+    # Generate feedback
+    response = client.models.generate_content(
+        model='gemini-2.5-flash',
+        contents=prompt
+    )
+    
+    return response.text
+
+
+def generate_session_feedback(session_dir):
+    """
+    Generate session-level feedback analyzing trends across all attempts
+    
+    Args:
+        session_dir: Path to session directory containing attempt folders
+    
+    Returns:
+        str: Session-level feedback text
+    """
+    session_path = Path(session_dir)
+    attempt_dirs = sorted([d for d in session_path.iterdir() if d.is_dir() and d.name.startswith('attempt_')])
+    
+    if not attempt_dirs:
+        return "No attempts found in this session."
+    
+    # Collect feedback from all attempts
+    feedbacks = []
+    for attempt_dir in attempt_dirs:
+        feedback_file = attempt_dir / 'gemini_feedback.txt'
+        if feedback_file.exists():
+            with open(feedback_file, 'r', encoding='utf-8') as f:
+                feedbacks.append({
+                    'attempt': attempt_dir.name,
+                    'feedback': f.read()
+                })
+    
+    if not feedbacks:
+        return "No feedback files found. Please analyze attempts first."
+    
+    # Build prompt
+    prompt = f"""You are an expert presentation coach. Analyze feedback from {len(feedbacks)} presentation attempts and provide session-level insights.
+
+ATTEMPT FEEDBACKS:
+"""
+    for i, fb in enumerate(feedbacks, 1):
+        prompt += f"\n--- Attempt {i} ({fb['attempt']}) ---\n{fb['feedback']}\n"
+    
+    prompt += f"""
+Provide VERY SHORT session-level analysis: exactly 2-3 main points, each point a single short sentence.
+Focus on:
+- Overall improvement trends
+- Persistent issues
+- Key recommendations
+
+Format: One sentence per point, no explanations."""
 
     # Generate feedback
     response = client.models.generate_content(

@@ -611,7 +611,19 @@ function App() {
       lines.push('🤖 AI PRESENTATION COACH FEEDBACK')
       lines.push('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
       lines.push('')
-      lines.push(result.geminiFeedback)
+      // Split feedback into lines - each sentence on a new line
+      const feedbackLines = result.geminiFeedback
+        .split(/[.!?]\s+/)
+        .filter(line => line.trim().length > 0)
+        .map(line => {
+          const trimmed = line.trim()
+          // Add punctuation if missing
+          if (trimmed && !trimmed.match(/[.!?]$/)) {
+            return trimmed + '.'
+          }
+          return trimmed
+        })
+      feedbackLines.forEach(line => lines.push(line))
     }
     
     lines.push('')
@@ -873,15 +885,47 @@ function App() {
             {currentSession.processFeedback ? (
               <div className="session-feedback-box">
                 <h3>Session Process Feedback</h3>
-                <p>{currentSession.processFeedback}</p>
+                <div className="session-feedback-content">
+                  {currentSession.processFeedback.split(/(?=\d+\.\s)/).filter(line => line.trim()).map((line, idx) => (
+                    <p key={idx}>{line.trim()}</p>
+                  ))}
+                </div>
                 <button 
                   className="regenerate-feedback-button"
                   onClick={async () => {
-                    // Generate process feedback from all attempts
-                    if (currentSession.attempts && currentSession.attempts.length > 0) {
-                      const feedback = `This session contains ${currentSession.attempts.length} attempt(s). Review your attempts to see detailed feedback for each one.`
-                      await updateSession(currentSession.id, { processFeedback: feedback })
+                    try {
+                      // Check if backend is available
+                      const useBackend = await checkBackendAvailable()
+                      
+                      if (!useBackend) {
+                        alert('Backend server is not running. Please start it to regenerate AI session feedback.')
+                        return
+                      }
+                      
+                      // Generate session feedback with Gemini
+                      const response = await fetch('http://localhost:5000/session_feedback', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                          sessionName: currentSession.name,
+                          sessionId: currentSession.id
+                        })
+                      })
+                      
+                      if (!response.ok) {
+                        throw new Error('Session feedback generation failed')
+                      }
+                      
+                      const result = await response.json()
+                      await updateSession(currentSession.id, { processFeedback: result.feedback })
                       await loadSession(currentSession.id)
+                      
+                      alert('Session feedback regenerated successfully!')
+                    } catch (err) {
+                      console.error('Error regenerating session feedback:', err)
+                      alert('Failed to regenerate session feedback: ' + err.message)
                     }
                   }}
                 >
@@ -893,10 +937,40 @@ function App() {
                 <button 
                   className="generate-feedback-button"
                   onClick={async () => {
-                    // Generate process feedback from all attempts
-                    const feedback = `This session contains ${currentSession.attempts.length} attempt(s). Review your attempts to see detailed feedback for each one.`
-                    await updateSession(currentSession.id, { processFeedback: feedback })
-                    await loadSession(currentSession.id)
+                    try {
+                      // Check if backend is available
+                      const useBackend = await checkBackendAvailable()
+                      
+                      if (!useBackend) {
+                        alert('Backend server is not running. Please start it to generate AI session feedback.')
+                        return
+                      }
+                      
+                      // Generate session feedback with Gemini
+                      const response = await fetch('http://localhost:5000/session_feedback', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                          sessionName: currentSession.name,
+                          sessionId: currentSession.id
+                        })
+                      })
+                      
+                      if (!response.ok) {
+                        throw new Error('Session feedback generation failed')
+                      }
+                      
+                      const result = await response.json()
+                      await updateSession(currentSession.id, { processFeedback: result.feedback })
+                      await loadSession(currentSession.id)
+                      
+                      alert('Session feedback generated successfully!')
+                    } catch (err) {
+                      console.error('Error generating session feedback:', err)
+                      alert('Failed to generate session feedback: ' + err.message)
+                    }
                   }}
                 >
                   Generate Session Feedback
