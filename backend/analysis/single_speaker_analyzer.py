@@ -362,10 +362,28 @@ def transcribe_audio(audio_path, language='en'):
         model = whisper.load_model("base", device=device)
 
         print("Transcribing...")
-        result = model.transcribe(audio_path, language='en', fp16=(device=="cuda"))
+        result = model.transcribe(audio_path, language='en', word_timestamps=True, fp16=(device=="cuda"))
 
         print(f"  ✓ Transcription complete")
         print(f"  ✓ Language: {language}")
+        
+        # Analyze pauses
+        pauses = []
+        for segment in result['segments']:
+            words = segment.get('words', [])
+            for i in range(len(words) - 1):
+                pause_duration = words[i+1]['start'] - words[i]['end']
+                if pause_duration > 0.3:  # Pauses longer than 300ms
+                    pauses.append(pause_duration)
+        
+        avg_pause = sum(pauses) / len(pauses) if pauses else 0
+        long_pauses = len([p for p in pauses if p > 1.0])
+        
+        pause_analysis = {
+            'total_pauses': len(pauses),
+            'avg_pause_duration': round(avg_pause, 2),
+            'long_pauses_count': long_pauses
+        }
         
         # Simplify segments by removing technical Whisper metadata
         simplified_segments = []
@@ -381,7 +399,8 @@ def transcribe_audio(audio_path, language='en'):
             'success': True,
             'text': result['text'],
             'language': language,
-            'segments': simplified_segments
+            'segments': simplified_segments,
+            'pause_analysis': pause_analysis
         }
     
     except ImportError:
@@ -487,7 +506,8 @@ def analyze_single_speaker_presentation(
             'transcription': {
                 'text': transcription['text'],
                 'language': transcription['language']
-            } if transcription and transcription['success'] else None
+            } if transcription and transcription['success'] else None,
+            'pause_analysis': transcription.get('pause_analysis') if transcription and transcription.get('success') else None
         }
         
         # Save JSON

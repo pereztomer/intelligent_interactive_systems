@@ -59,6 +59,16 @@ SPEECH SEGMENTS WITH METRICS:
   Filler words: {', '.join(features.get('filler_words', [])) if features.get('filler_words') else 'None'}
 """
     
+    # Add pause analysis
+    pause_analysis = analysis_data.get('pause_analysis')
+    if pause_analysis:
+        prompt += f"""
+PAUSE ANALYSIS:
+- Total pauses (>300ms): {pause_analysis.get('total_pauses', 0)}
+- Average pause duration: {pause_analysis.get('avg_pause_duration', 0):.2f}s
+- Long pauses (>1s): {pause_analysis.get('long_pauses_count', 0)}
+"""
+    
     # Add navigation info
     prompt += f"""
 SLIDE NAVIGATION:
