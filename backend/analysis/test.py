@@ -1,17 +1,31 @@
-import whisper
-import torch
+import os
+from dotenv import load_dotenv
+from google import genai
+from google.genai import types
 
-audio_path = r"C:\Users\perez\Desktop\intelligent_interactive_systems\sessions\test_seasion_11\attempt_1\audio.wav"
 
-# Check device
-device = "cuda" if torch.cuda.is_available() else "cpu"
-print(f"Using device: {device}")
+# Load environment variables
+load_dotenv()
+api_key = os.getenv('GOOGLE_API_KEY')
 
-# Load model on GPU
-print("Loading Whisper model...")
-model = whisper.load_model("base", device=device)
+if not api_key:
+    print("❌ Error: GOOGLE_API_KEY not found in .env file")
+    exit(1)
 
-print("Transcribing...")
-result = model.transcribe(audio_path, language='en', fp16=(device=="cuda"))
+# Configure the client
+client = genai.Client(api_key=api_key)
 
-print(result["text"])
+
+# List available models to see what's available
+# print("Available models:")
+# for model in client.models.list():
+#     print(f"- {model.name}")
+    
+
+# Use the correct model name (gemini-pro is now gemini-1.5-flash or gemini-1.5-pro)
+response = client.models.generate_content(
+    model='gemini-2.5-flash',
+    contents='Hello, can you hear me?'
+)
+
+print(response.text)
