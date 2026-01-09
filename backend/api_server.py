@@ -111,7 +111,7 @@ def sanitize_filename(name):
 @app.route('/save_recording', methods=['POST'])
 def save_recording():
     """
-    Save recording data (audio + navigation) to file system
+    Save recording data (audio + video + navigation) to file system
     
     Expected JSON:
     {
@@ -119,8 +119,8 @@ def save_recording():
         "sessionId": 123,
         "attemptNumber": 1,
         "audioData": "base64_encoded_audio",
-        "navigationEvents": [...],
-        "videoData": "base64_encoded_video" (optional, for reference)
+        "videoData": "base64_encoded_video" (optional),
+        "navigationEvents": [...]
     }
     
     Returns paths to saved files
@@ -136,6 +136,7 @@ def save_recording():
         session_id = data.get('sessionId')
         attempt_number = data.get('attemptNumber', 1)
         audio_base64 = data.get('audioData')
+        video_base64 = data.get('videoData')
         navigation_events = data.get('navigationEvents', [])
         
         if not audio_base64:
@@ -160,6 +161,19 @@ def save_recording():
         
         print(f"✅ Audio saved: {audio_path}")
         
+        # Save video file (if provided)
+        video_path = None
+        if video_base64:
+            video_path = attempt_dir / 'video.webm'
+            if ',' in video_base64:
+                video_base64 = video_base64.split(',', 1)[1]
+            
+            video_binary = base64.b64decode(video_base64)
+            with open(video_path, 'wb') as f:
+                f.write(video_binary)
+            
+            print(f"✅ Video saved: {video_path}")
+        
         # Save navigation events JSON
         navigation_path = attempt_dir / 'navigation.json'
         with open(navigation_path, 'w', encoding='utf-8') as f:
@@ -173,6 +187,7 @@ def save_recording():
             'sessionDir': str(session_dir),
             'attemptDir': str(attempt_dir),
             'audioPath': str(audio_path),
+            'videoPath': str(video_path) if video_path else None,
             'navigationPath': str(navigation_path),
             'message': f'Recording saved successfully to {attempt_dir.name}'
         }

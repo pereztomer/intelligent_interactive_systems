@@ -318,6 +318,7 @@ function App() {
                   sessionId: currentSession.id,
                   attemptNumber: sessionAttemptNumber,
                   audioData: audioData,
+                  videoData: base64data,
                   navigationEvents: navigationEventsRef.current
                 })
               })
@@ -326,9 +327,10 @@ function App() {
                 const result = await response.json()
                 console.log('✅ Files saved to:', result.attemptDir)
                 
-                // Update attempt with audio file path
+                // Update attempt with file paths
                 await updateAttempt(attempt.id, { 
                   audioPath: result.audioPath,
+                  videoPath: result.videoPath,
                   navigationPath: result.navigationPath 
                 })
                 
