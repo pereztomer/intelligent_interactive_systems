@@ -1003,9 +1003,43 @@ function App() {
 
   // Attempt Viewer Page (PDF + Recording)
   if (currentView === 'attempt') {
+    // Get attempt number if viewing a previous attempt
+    let attemptNumber = null
+    if (currentAttempt && currentSession && currentSession.attempts) {
+      const attemptIndex = currentSession.attempts.findIndex(a => a.id === currentAttempt.id)
+      if (attemptIndex !== -1) {
+        attemptNumber = attemptIndex + 1
+      }
+    }
+    
     return (
       <div className="App">
         <div className="presentation-viewer">
+          {/* Header bar with session name, attempt number, and back button */}
+          {(currentSession || currentAttempt) && (
+            <div className="session-header">
+              <h2>
+                {currentSession?.name || 'Session'}
+                {attemptNumber && ` - Attempt ${attemptNumber}`}
+              </h2>
+              <button 
+                className="back-button"
+                onClick={async () => {
+                  if (currentSession) {
+                    await loadSession(currentSession.id)
+                    setCurrentView('session')
+                  } else {
+                    setCurrentView('sessionList')
+                  }
+                  setFile(null)
+                  setCurrentAttempt(null)
+                }}
+              >
+                ← Back to Session
+              </button>
+            </div>
+          )}
+
           {!currentAttempt && (
             <>
               <div className="controls-top">
@@ -1107,24 +1141,6 @@ function App() {
               )}
             </>
           )}
-
-          <div className="bottom-actions">
-            <button 
-              className="back-button"
-              onClick={async () => {
-                if (currentSession) {
-                  await loadSession(currentSession.id)
-                  setCurrentView('session')
-                } else {
-                  setCurrentView('sessionList')
-                }
-                setFile(null)
-                setCurrentAttempt(null)
-              }}
-            >
-              Back to Session
-            </button>
-          </div>
 
           {currentAttempt && (
             <div className="attempt-details-section">
