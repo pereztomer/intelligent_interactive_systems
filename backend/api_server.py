@@ -19,6 +19,7 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 from backend.analysis.single_speaker_analyzer import analyze_single_speaker_presentation
+from backend.analysis.gemini_feedback import generate_presentation_feedback
 
 app = Flask(__name__)
 CORS(app)  # Allow requests from browser
@@ -76,6 +77,35 @@ def analyze():
         
         print(f"✅ Analysis complete! Results saved to: {analysis_json}")
         
+        # Generate Gemini feedback
+        gemini_feedback = None
+        try:
+            # Look for navigation.json and PDF in the same directory
+            navigation_json = audio_dir / 'navigation.json'
+            pdf_files = list(audio_dir.glob('*.pdf'))
+            pdf_path = pdf_files[0] if pdf_files else None
+            
+            if navigation_json.exists():
+                print(f"\n🤖 Generating AI feedback with Gemini...")
+                gemini_feedback = generate_presentation_feedback(
+                    str(analysis_json),
+                    str(navigation_json),
+                    str(pdf_path) if pdf_path else None
+                )
+                
+                # Save feedback to file
+                feedback_path = audio_dir / 'gemini_feedback.txt'
+                with open(feedback_path, 'w', encoding='utf-8') as f:
+                    f.write(gemini_feedback)
+                print(f"✅ Gemini feedback saved to: {feedback_path}")
+            else:
+                print("⚠️  Navigation.json not found, skipping Gemini feedback")
+        except Exception as e:
+            print(f"⚠️  Gemini feedback generation failed: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            # Continue without feedback - don't fail the whole analysis
+        
         # Return results
         response = {
             'success': True,
@@ -88,7 +118,8 @@ def analyze():
                 'segments': result['pacing_metrics']['num_segments'],
                 'longPauses': result['pacing_metrics']['num_long_pauses'],
             },
-            'transcription': result['transcription']['text'] if result['transcription'] else None
+            'transcription': result['transcription']['text'] if result['transcription'] else None,
+            'geminiFeedback': gemini_feedback  # Include Gemini feedback if available
         }
         
         return jsonify(response)

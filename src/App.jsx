@@ -605,6 +605,15 @@ function App() {
       lines.push(`   ${preview}${result.transcription.length > 300 ? '...' : ''}`)
     }
     
+    if (result.geminiFeedback) {
+      lines.push('')
+      lines.push('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+      lines.push('🤖 AI PRESENTATION COACH FEEDBACK')
+      lines.push('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+      lines.push('')
+      lines.push(result.geminiFeedback)
+    }
+    
     lines.push('')
     lines.push('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
     lines.push('✨ Full backend analysis complete!')
