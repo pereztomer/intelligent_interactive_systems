@@ -348,22 +348,23 @@ def transcribe_audio(audio_path, language='en'):
     
     try:
         import whisper
-        import torch
-
+        
+        # Normalize and resolve path for Windows compatibility
+        audio_path = str(Path(audio_path).resolve())
+        
+        # Verify file exists
+        if not os.path.exists(audio_path):
+            raise FileNotFoundError(f"Audio file not found: {audio_path}")
+        
+        print(f"  Audio file: {audio_path}")
+        
         # Load model (base is good balance of speed/accuracy)
         print("  Loading Whisper model...")
-
-        # Check device
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-        print(f"Using device: {device}")
-
-        # Load model on GPU
-        print("Loading Whisper model...")
-        model = whisper.load_model("base", device=device)
-
-        print("Transcribing...")
-        result = model.transcribe(audio_path, language='en', fp16=(device=="cuda"))
-
+        model = whisper.load_model("base")
+        
+        print("  Transcribing...")
+        result = model.transcribe(audio_path, language=language)
+        
         print(f"  ✓ Transcription complete")
         print(f"  ✓ Language: {language}")
         

@@ -348,22 +348,15 @@ def transcribe_audio(audio_path, language='en'):
     
     try:
         import whisper
-        import torch
-
+        
         # Load model (base is good balance of speed/accuracy)
         print("  Loading Whisper model...")
-
-        # Check device
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-        print(f"Using device: {device}")
-
-        # Load model on GPU
-        print("Loading Whisper model...")
-        model = whisper.load_model("base", device=device)
-
-        print("Transcribing...")
-        result = model.transcribe(audio_path, language='en', fp16=(device=="cuda"))
-
+        model = whisper.load_model("base")
+        
+        print("  Transcribing...")
+        print(audio_path)
+        result = model.transcribe(audio_path, language=language)
+        
         print(f"  ✓ Transcription complete")
         print(f"  ✓ Language: {language}")
         
