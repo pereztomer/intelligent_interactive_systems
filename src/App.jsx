@@ -1001,103 +1001,106 @@ function App() {
     return (
       <div className="App">
         <div className="presentation-viewer">
-          <div className="controls-top">
-            <div className="navigation-controls">
-              <button onClick={goToPrevPage} disabled={pageNumber <= 1}>
-                ← Previous
-              </button>
-              <span className="page-counter">
-                Page {pageNumber} of {numPages || '...'}
-              </span>
-              <button onClick={goToNextPage} disabled={pageNumber >= numPages}>
-                Next →
-              </button>
-            </div>
-            <div className="zoom-controls">
-              <button onClick={zoomOut} disabled={scale <= 0.5}>−</button>
-              <span className="zoom-level">{Math.round(scale * 100)}%</span>
-              <button onClick={zoomIn} disabled={scale >= 3.0}>+</button>
-              <button onClick={resetZoom} className="reset-zoom">Reset</button>
-            </div>
-          </div>
-
-          <div className="recording-controls">
-            {!isRecording ? (
-              <button className="record-button" onClick={startRecording}>
-                🎥 Start Recording
-              </button>
-            ) : (
-              <div className="recording-status">
-                <button className="stop-button" onClick={stopRecording}>
-                  ⏹ Stop Recording
-                </button>
-                <span className="recording-indicator">
-                  <span className="recording-dot"></span>
-                  Recording: {formatTime(recordingTime)}
-                </span>
-              </div>
-            )}
-          </div>
-          
-          <div className="pdf-container">
-            <div className="pdf-wrapper">
-              {error && <p className="error">{error}</p>}
-              {file ? (
-                <Document
-                  file={file}
-                  onLoadSuccess={onDocumentLoadSuccess}
-                  onLoadError={onDocumentLoadError}
-                  loading={
-                    <div className="loading">
-                      <p>Loading PDF...</p>
-                    </div>
-                  }
-                >
-                  <Page
-                    pageNumber={pageNumber}
-                    scale={scale}
-                    renderTextLayer={true}
-                    renderAnnotationLayer={true}
-                    className="pdf-page"
-                  />
-                </Document>
-              ) : (
-                <div className="no-pdf">
-                  <p>No PDF loaded. Please upload a PDF file.</p>
-                  <input
-                    type="file"
-                    accept=".pdf"
-                    onChange={handleFileUploadForAttempt}
-                    id="file-upload-attempt-inline"
-                    style={{ display: 'none' }}
-                  />
-                  <button onClick={() => document.getElementById('file-upload-attempt-inline').click()}>
-                    Upload PDF
+          {!currentAttempt && (
+            <>
+              <div className="controls-top">
+                <div className="navigation-controls">
+                  <button onClick={goToPrevPage} disabled={pageNumber <= 1}>
+                    ← Previous
+                  </button>
+                  <span className="page-counter">
+                    Page {pageNumber} of {numPages || '...'}
+                  </span>
+                  <button onClick={goToNextPage} disabled={pageNumber >= numPages}>
+                    Next →
                   </button>
                 </div>
-              )}
-            </div>
-          </div>
-
-          {numPages && numPages > 1 && (
-            <div className="page-thumbnails">
-              {Array.from({ length: numPages }, (_, idx) => (
-                <div
-                  key={idx + 1}
-                  className={`thumbnail ${idx + 1 === pageNumber ? 'active' : ''}`}
-                  onClick={() => {
-                    const newPage = idx + 1
-                    console.log(`Page button clicked: ${pageNumber} → ${newPage}, Recording: ${isRecording}`)
-                    if (newPage !== pageNumber) {
-                      trackPageNavigation(pageNumber, newPage, 'page-button')
-                    }
-                    setPageNumber(newPage)
-                  }}
-                >
-                  {idx + 1}
+                <div className="recording-controls">
+                  {!isRecording ? (
+                    <button className="record-button" onClick={startRecording}>
+                      🎥 Start Recording
+                    </button>
+                  ) : (
+                    <div className="recording-status">
+                      <button className="stop-button" onClick={stopRecording}>
+                        ⏹ Stop Recording
+                      </button>
+                      <span className="recording-indicator">
+                        <span className="recording-dot"></span>
+                        Recording: {formatTime(recordingTime)}
+                      </span>
+                    </div>
+                  )}
                 </div>
-              ))}
-            </div>
+                <div className="zoom-controls">
+                  <button onClick={zoomOut} disabled={scale <= 0.5}>−</button>
+                  <span className="zoom-level">{Math.round(scale * 100)}%</span>
+                  <button onClick={zoomIn} disabled={scale >= 3.0}>+</button>
+                  <button onClick={resetZoom} className="reset-zoom">Reset</button>
+                </div>
+              </div>
+              
+              <div className="pdf-container">
+                <div className="pdf-wrapper">
+                  {error && <p className="error">{error}</p>}
+                  {file ? (
+                    <Document
+                      file={file}
+                      onLoadSuccess={onDocumentLoadSuccess}
+                      onLoadError={onDocumentLoadError}
+                      loading={
+                        <div className="loading">
+                          <p>Loading PDF...</p>
+                        </div>
+                      }
+                    >
+                      <Page
+                        pageNumber={pageNumber}
+                        scale={scale}
+                        renderTextLayer={true}
+                        renderAnnotationLayer={true}
+                        className="pdf-page"
+                      />
+                    </Document>
+                  ) : (
+                    <div className="no-pdf">
+                      <p>No PDF loaded. Please upload a PDF file.</p>
+                      <input
+                        type="file"
+                        accept=".pdf"
+                        onChange={handleFileUploadForAttempt}
+                        id="file-upload-attempt-inline"
+                        style={{ display: 'none' }}
+                      />
+                      <button onClick={() => document.getElementById('file-upload-attempt-inline').click()}>
+                        Upload PDF
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {numPages && numPages > 1 && (
+                <div className="page-thumbnails">
+                  {Array.from({ length: numPages }, (_, idx) => (
+                    <div
+                      key={idx + 1}
+                      className={`thumbnail ${idx + 1 === pageNumber ? 'active' : ''}`}
+                      onClick={() => {
+                        const newPage = idx + 1
+                        console.log(`Page button clicked: ${pageNumber} → ${newPage}, Recording: ${isRecording}`)
+                        if (newPage !== pageNumber) {
+                          trackPageNavigation(pageNumber, newPage, 'page-button')
+                        }
+                        setPageNumber(newPage)
+                      }}
+                    >
+                      {idx + 1}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
           )}
 
           <div className="bottom-actions">
