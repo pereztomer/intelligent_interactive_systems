@@ -19,7 +19,7 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 from backend.analysis.single_speaker_analyzer import analyze_single_speaker_presentation
-from backend.analysis.gemini_feedback import generate_presentation_feedback
+from backend.analysis.gemini_feedback import generate_presentation_feedback, generate_session_feedback
 
 app = Flask(__name__)
 CORS(app)  # Allow requests from browser
@@ -123,6 +123,50 @@ def analyze():
         }
         
         return jsonify(response)
+        
+    except Exception as e:
+        print(f"❌ Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/session_feedback', methods=['POST'])
+def session_feedback():
+    """
+    Generate session-level feedback analyzing trends across all attempts
+    
+    Expected JSON:
+    {
+        "sessionName": "My Presentation",
+        "sessionId": 123
+    }
+    
+    Returns session-level feedback
+    """
+    try:
+        data = request.get_json()
+        
+        if not data or 'sessionName' not in data or 'sessionId' not in data:
+            return jsonify({'error': 'Session name and ID required'}), 400
+        
+        session_name = data['sessionName']
+        session_id = data['sessionId']
+        
+        # Construct session directory path
+        safe_session_name = sanitize_filename(session_name)
+        session_dir = SESSIONS_DIR / f"{safe_session_name}_{session_id}"
+        
+        if not os.path.exists(session_dir):
+            return jsonify({'error': f'Session directory not found: {session_dir}'}), 404
+        
+        print(f"\n🤖 Generating session-level feedback for: {session_dir}")
+        feedback = generate_session_feedback(str(session_dir))
+        
+        return jsonify({
+            'success': True,
+            'feedback': feedback
+        })
         
     except Exception as e:
         print(f"❌ Error: {str(e)}")
@@ -262,6 +306,7 @@ if __name__ == '__main__':
     print("  GET  /health         - Health check")
     print("  POST /analyze        - Analyze audio")
     print("  POST /save_recording - Save recording data to file system")
+    print("  POST /session_feedback - Generate session-level AI feedback")
     print("\n" + "="*80)
     
     app.run(host='localhost', port=5000, debug=True)
