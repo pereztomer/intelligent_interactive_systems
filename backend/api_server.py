@@ -175,6 +175,72 @@ def session_feedback():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/generate_feedback', methods=['POST'])
+def generate_feedback():
+    """
+    Generate AI feedback using Gemini for an existing analysis
+    
+    Expected JSON:
+    {
+        "audioPath": "/path/to/audio.wav"  // Path to audio file with existing analysis
+    }
+    
+    Returns Gemini feedback only
+    """
+    try:
+        data = request.get_json()
+        
+        if not data or 'audioPath' not in data:
+            return jsonify({'error': 'Audio path required'}), 400
+        
+        audio_path = Path(data['audioPath'])
+        
+        if not audio_path.exists():
+            return jsonify({'error': f'Audio file not found: {audio_path}'}), 404
+        
+        # Check if analysis.json exists
+        audio_dir = audio_path.parent
+        analysis_json = audio_dir / 'analysis.json'
+        navigation_json = audio_dir / 'navigation.json'
+        
+        if not analysis_json.exists():
+            return jsonify({'error': 'Analysis file not found. Please run full analysis first.'}), 404
+        
+        if not navigation_json.exists():
+            return jsonify({'error': 'Navigation file not found. Please run full analysis first.'}), 404
+        
+        print(f"\n🤖 Generating AI feedback with Gemini...")
+        
+        # Look for PDF file
+        pdf_files = list(audio_dir.glob('*.pdf'))
+        pdf_path = pdf_files[0] if pdf_files else None
+        
+        # Generate Gemini feedback
+        gemini_feedback = generate_presentation_feedback(
+            str(analysis_json),
+            str(navigation_json),
+            str(pdf_path) if pdf_path else None
+        )
+        
+        # Save feedback to file
+        feedback_path = audio_dir / 'gemini_feedback.txt'
+        with open(feedback_path, 'w', encoding='utf-8') as f:
+            f.write(gemini_feedback)
+        print(f"✅ Gemini feedback saved to: {feedback_path}")
+        
+        return jsonify({
+            'success': True,
+            'feedback': gemini_feedback,
+            'feedbackPath': str(feedback_path)
+        })
+        
+    except Exception as e:
+        print(f"❌ Error generating AI feedback: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
 def sanitize_filename(name):
     """Convert session name to safe directory name"""
     # Remove/replace unsafe characters

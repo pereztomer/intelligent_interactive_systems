@@ -763,6 +763,72 @@ function App() {
     }
   }
 
+  // Handle AI feedback generation (Gemini only)
+  const handleGenerateAIFeedback = async (attemptId) => {
+    setAnalyzing(prev => ({ ...prev, [`ai_${attemptId}`]: true }))
+    
+    try {
+      if (!currentSession) {
+        throw new Error('No session loaded')
+      }
+
+      const attempt = currentSession.attempts?.find(a => a.id === attemptId)
+      if (!attempt) {
+        throw new Error('Attempt not found')
+      }
+
+      // Check if backend server is running
+      const useBackend = await checkBackendAvailable()
+      
+      if (!useBackend) {
+        throw new Error('Backend server is not running. Please start the backend to use AI Feedback.')
+      }
+
+      // Check if attempt has audio path (analysis must have been run first)
+      if (!attempt.audioPath) {
+        throw new Error('Please run full Analysis first before generating AI Feedback.')
+      }
+      
+      console.log('🤖 Generating AI feedback only...')
+      
+      // Call Gemini feedback endpoint
+      const response = await fetch('http://localhost:5000/generate_feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          audioPath: attempt.audioPath
+        })
+      })
+      
+      if (!response.ok) {
+        throw new Error('AI feedback generation failed: ' + response.statusText)
+      }
+      
+      const result = await response.json()
+      
+      // Append AI feedback to existing feedback or create new
+      const aiFeedbackSection = `\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n🤖 AI PRESENTATION COACH FEEDBACK\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n${result.feedback}\n`
+      
+      const currentFeedback = attempt.attemptFeedback || ''
+      const updatedFeedback = currentFeedback.includes('AI PRESENTATION COACH FEEDBACK') 
+        ? currentFeedback.replace(/\n\n━━━.*AI PRESENTATION COACH FEEDBACK.*\n━━━.*\n\n[\s\S]*$/, aiFeedbackSection)
+        : currentFeedback + aiFeedbackSection
+      
+      // Save feedback
+      await updateAttempt(attemptId, { attemptFeedback: updatedFeedback })
+      await loadSession(currentSession.id)
+      
+      alert('AI Feedback generated!\n\nClick "View Feedback" to see results.')
+    } catch (err) {
+      console.error('Error generating AI feedback:', err)
+      alert('Error generating AI feedback: ' + err.message)
+    } finally {
+      setAnalyzing(prev => ({ ...prev, [`ai_${attemptId}`]: false }))
+    }
+  }
+
   // ========== VIEW RENDERS ==========
 
   // Landing Page
@@ -1033,6 +1099,17 @@ function App() {
                     >
                       {!pyodide ? 'Loading Python...' : analyzing[attempt.id] ? 'Analyzing...' : 'Analyze'}
                     </button>
+                    <button
+                      className="analyze-button secondary"
+                      onClick={async (e) => {
+                        e.stopPropagation()
+                        await handleGenerateAIFeedback(attempt.id)
+                      }}
+                      disabled={analyzing[`ai_${attempt.id}`] || !attempt.audioPath}
+                      title={!attempt.audioPath ? 'Run full Analysis first' : 'Generate AI feedback using Gemini'}
+                    >
+                      {analyzing[`ai_${attempt.id}`] ? 'Generating...' : '🤖 AI Feedback'}
+                    </button>
                     {attempt.attemptFeedback && (
                       <button
                         className="analyze-button"
@@ -1041,6 +1118,7 @@ function App() {
                           handleSelectAttempt(attempt)
                         }}
                       >
+                      
                         View Feedback
                       </button>
                     )}
