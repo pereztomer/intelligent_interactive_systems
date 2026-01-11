@@ -296,7 +296,7 @@ function App() {
               pdfData: pdfData,
               fileName: fileName,
               duration: recordingTime,
-              navigationEvents: navigationEvents // Add navigation tracking data
+              navigationEvents: navigationEventsRef.current // Use ref to ensure latest data
             })
             
             // Then, save audio + navigation to file system via backend

@@ -2,7 +2,7 @@ import os
 import json
 from pathlib import Path
 from dotenv import load_dotenv
-from google import genai
+import google.generativeai as genai
 
 # Load environment variables
 load_dotenv()
@@ -11,7 +11,7 @@ api_key = os.getenv('GOOGLE_API_KEY')
 if not api_key:
     raise ValueError("GOOGLE_API_KEY not found in .env file")
 
-client = genai.Client(api_key=api_key)
+genai.configure(api_key=api_key)
 
 
 def generate_presentation_feedback(analysis_json_path, navigation_json_path, pdf_path=None):
@@ -93,10 +93,8 @@ Focus on the most critical issues from:
 Format: One sentence per point, each point on a new line, no explanations."""
 
     # Generate feedback
-    response = client.models.generate_content(
-        model='gemini-2.5-flash',
-        contents=prompt
-    )
+    model = genai.GenerativeModel('gemini-2.0-flash-exp')
+    response = model.generate_content(prompt)
     
     return response.text
 
@@ -149,10 +147,8 @@ Focus on:
 Format: One sentence per point, no explanations."""
 
     # Generate feedback
-    response = client.models.generate_content(
-        model='gemini-2.5-flash',
-        contents=prompt
-    )
+    model = genai.GenerativeModel('gemini-2.0-flash-exp')
+    response = model.generate_content(prompt)
     
     return response.text
 
