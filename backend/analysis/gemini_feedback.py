@@ -93,7 +93,7 @@ Focus on the most critical issues from:
 Format: One sentence per point, each point on a new line, no explanations."""
 
     # Generate feedback
-    model = genai.GenerativeModel('gemini-2.0-flash-exp')
+    model = genai.GenerativeModel('gemini-2.5-flash')
     response = model.generate_content(prompt)
     
     return response.text
@@ -147,7 +147,7 @@ Focus on:
 Format: One sentence per point, no explanations."""
 
     # Generate feedback
-    model = genai.GenerativeModel('gemini-2.0-flash-exp')
+    model = genai.GenerativeModel('gemini-2.5-flash')
     response = model.generate_content(prompt)
     
     return response.text
