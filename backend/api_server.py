@@ -221,15 +221,14 @@ def generate_feedback():
         
         print(f"\n🤖 Generating AI feedback with Gemini...")
         
-        # Look for PDF file
-        pdf_files = list(audio_dir.glob('*.pdf'))
-        pdf_path = pdf_files[0] if pdf_files else None
+        # Look for PDF content JSON file
+        pdf_content_path = audio_dir / 'pdf_content.json'
         
-        # Generate Gemini feedback
+        # Generate Gemini feedback with PDF content
         gemini_feedback = generate_presentation_feedback(
             str(analysis_json),
             str(navigation_json),
-            str(pdf_path) if pdf_path else None
+            str(pdf_content_path) if pdf_content_path.exists() else None
         )
         
         # Save feedback to file
