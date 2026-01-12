@@ -1097,7 +1097,7 @@ function App() {
                       }}
                       disabled={analyzing[attempt.id] || !pyodide}
                     >
-                      {!pyodide ? 'Loading Python...' : analyzing[attempt.id] ? 'Analyzing...' : 'Analyze'}
+                      {!pyodide ? '⏳ Loading Python...' : analyzing[attempt.id] ? '⏳ Analyzing...' : '📊 Analyze'}
                     </button>
                     <button
                       className="analyze-button secondary"
@@ -1108,7 +1108,7 @@ function App() {
                       disabled={analyzing[`ai_${attempt.id}`] || !attempt.audioPath}
                       title={!attempt.audioPath ? 'Run full Analysis first' : 'Generate AI feedback using Gemini'}
                     >
-                      {analyzing[`ai_${attempt.id}`] ? 'Generating...' : '🤖 AI Feedback'}
+                      {analyzing[`ai_${attempt.id}`] ? '⏳ Generating...' : '🤖 AI Feedback'}
                     </button>
                     {attempt.attemptFeedback && (
                       <button
@@ -1118,8 +1118,7 @@ function App() {
                           handleSelectAttempt(attempt)
                         }}
                       >
-                      
-                        View Feedback
+                        👁️ View Feedback
                       </button>
                     )}
                     <button
@@ -1130,7 +1129,7 @@ function App() {
                       }}
                       title="Export recording for backend analysis"
                     >
-                      Export
+                      💾 Export
                     </button>
                     <button
                       className="delete-button"
