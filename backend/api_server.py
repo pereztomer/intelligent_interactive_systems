@@ -13,6 +13,7 @@ import json
 from pathlib import Path
 from datetime import datetime
 import re
+import PyPDF2
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
@@ -27,6 +28,42 @@ CORS(app)  # Allow requests from browser
 # Sessions directory
 SESSIONS_DIR = project_root / 'sessions'
 SESSIONS_DIR.mkdir(exist_ok=True)
+
+def sanitize_filename(name):
+    """Remove invalid characters from filename"""
+    return re.sub(r'[<>:"/\\|?*]', '_', name)
+
+def extract_pdf_content(pdf_path):
+    """
+    Extract text content from PDF file page by page
+    
+    Args:
+        pdf_path: Path to PDF file
+        
+    Returns:
+        List of dicts with page_number and content
+    """
+    try:
+        pages_content = []
+        
+        with open(pdf_path, 'rb') as pdf_file:
+            pdf_reader = PyPDF2.PdfReader(pdf_file)
+            
+            for page_num in range(len(pdf_reader.pages)):
+                page = pdf_reader.pages[page_num]
+                text = page.extract_text()
+                
+                pages_content.append({
+                    'page_number': page_num + 1,  # 1-indexed for user display
+                    'content': text.strip()
+                })
+        
+        print(f"✅ Extracted {len(pages_content)} pages from PDF")
+        return pages_content
+        
+    except Exception as e:
+        print(f"❌ PDF extraction error: {str(e)}")
+        return []
 
 @app.route('/health', methods=['GET'])
 def health():
@@ -306,6 +343,14 @@ def save_recording():
                 f.write(pdf_binary)
             
             print(f"✅ PDF saved: {pdf_path}")
+            
+            # Extract PDF content to JSON
+            pdf_content = extract_pdf_content(pdf_path)
+            if pdf_content:
+                pdf_content_path = attempt_dir / 'pdf_content.json'
+                with open(pdf_content_path, 'w', encoding='utf-8') as f:
+                    json.dump(pdf_content, f, indent=2, ensure_ascii=False)
+                print(f"✅ PDF content extracted: {pdf_content_path}")
         
         # Save navigation events JSON
         navigation_path = attempt_dir / 'navigation.json'

@@ -1,0 +1,22 @@
+[
+  {
+    "page_number": 1,
+    "content": "Data Gathering  \nI downloaded 50-minute MP3 files  from a known source called Open to Debate . Using \ninformation -retrieval methods, I extracted the top 5 topics  that matched Elad’s project \ndomain:  \n• Childhood Obesity Guidelines: Good Medicine or Too Extreme?  \n• Is Legalizing Marijuana a Mistake?  \n• Debating the Legacy of the COVID -19 Pandemic  \n• Psychedelics for Mental Health: Help or Hype?  \n• Should We Legalize the Market for Human Organs?  \nI prefer to focus on science-related topics rather than politics , since political debates \ntend to become heated and don’t always provide scientific explanations  \n \nSpeaker Diarization  \nThe next step was to classify which speaker spoke when . This process is called \ndiarization  (from the word “diary” – יומן .)I used Pyannote.audio , the best open -source \nmodel I found, authenticated using a HuggingFace  token.  \nImportant notes:  \n• The process is long and must be done offline . On CPU, a 50 -minute podcast took \n~20 minutes  to process.  \n• The main challenge was not knowing how many speakers  appear in each debate.  \n• The first speaker is labeled 𝑆0, and every new speaker is compared to all previous \nones ( 𝑆0….𝑆𝑛−1). Complexity increases exponentially  as more speakers appear.  \n• Debates include moderators + crowd questions , so total speakers are usually 5  - 8. \nIn contrast, Elad’s simulator will likely include only one speaker , so no diarization will be \nneeded."
+  },
+  {
+    "page_number": 2,
+    "content": "JSON Output Structure  \nAfter diarization, I created a JSON file storing each speaker’s speech segments.  \n{ \n  \"speaker\" : \"Jeremy Chapman\" , \n  \"start\": 845.97, \n  \"end\": 857.0, \n  \"duration\" : 11.03, \n  \"pauses\" : [0.36, 0.48, 0.37, 0.22, 0.14], \n  \"crowd_question\" : false \n} \n \nI also added metadata  for each speaker to support future analysis:  \n\"speaker\" : \"Sally Satel\" , \n\"profession\" : \"Psychiatrist, Senior Fellow at the American Enterprise Institute\" , \n\"degree\" : \"M.D., Brown University\" , \n\"lecturer\" : \"Yale University School of Medicine\" , \n\"podcast\" : \"Should We Legalize the Market for Human Organs\" , \n\"total segments\" : 21, \n\"total duration\" : 855.17, \n\"crowd_questions_count\" : 3, \n \nNow the data is ready for prosodic feature extraction."
+  },
+  {
+    "page_number": 3,
+    "content": "Feature Selection  \nThe paper “Developing a Tool for Storytelling Quality Assessment Using Acoustic Features”  \nby Tzipi Horowitz -Kraus  highlights the importance of different acoustic features.  Their \nfindings are summarized below:  \nFeature Group  Necessity \nLevel  Primary \nCategory  Reason  \nPitch Dynamics  \n(variability/change \nrate)  High  Expressiveness & \nClarity  Strongest indicators:  pitch change rate \ncorrelated 0.45 with Clarity and 0.29 with \nExpressiveness.  \nSpectral Dynamics   Moderate  Expressiveness  Captured \"movement\" in voice; key for \nexpressiveness classification6. \nSpectral Clarity  \n(MFCC Means, \nCentroid)  Moderate  Clarity  primary indicators for speech \nintelligibility and articulation.  \nTemporal / Rhythm  \n(Pause stats, speech \nrate)  Moderate  Naturalness  temporal features were more relevant \nhere than in other categories.  \nAmplitude / Energy  \n(RMS, Range)  Low  N/A (Weak \nimpact)  Showed very poor correlations  \nFormants  (F1/F2 \nvariability)  Low  N/A (Weak \nimpact)  largely excluded during feature \nselection17. \nBased on their conclusions, I decided to focus primarily on Pitch Dynamics , followed by \nselected Spectral features ."
+  },
+  {
+    "page_number": 4,
+    "content": "These charts represent the unique vocal \"fingerprint\"  of individual speakers\n \n \nThis bar chart ranks speakers based on their level of vocal excitement and engagement"
+  },
+  {
+    "page_number": 5,
+    "content": "These line graphs track how pitch, energy (RMS) , and speaking rate  fluctuate over the \nduration of a debate  “Childhood Obesity Guidelines Good Medicine or Too ”."
+  }
+]
