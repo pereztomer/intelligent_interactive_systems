@@ -82,6 +82,8 @@ def analyze():
             'success': True,
             'duration': result['duration'],
             'analysisPath': str(analysis_json),  # Include path in response
+            'speech_segments': result['speech_segments'],  # Include segments for speaker profile
+            'pacing_metrics': result['pacing_metrics'],  # Include full metrics
             'pacing': {
                 'speakingTime': result['pacing_metrics']['total_speaking_time'],
                 'silenceTime': result['pacing_metrics']['total_silence_time'],

@@ -417,38 +417,6 @@ def transcribe_audio(audio_path, language='en'):
         }
 
 
-def analyze_audio_quality(audio, sr):
-    """
-    Analyze audio quality metrics (simplified for pedagogical feedback)
-    
-    Args:
-        audio: Audio signal
-        sr: Sample rate
-    
-    Returns:
-        dict with simplified quality metrics
-    """
-    print("\n🎚️  Analyzing audio quality...")
-    
-    # RMS energy (volume) - useful for feedback
-    rms = np.sqrt(np.mean(audio**2))
-    
-    # Peak amplitude - check for clipping
-    peak = np.abs(audio).max()
-    
-    # Simple quality metrics for user feedback
-    metrics = {
-        'volume_level': float(rms),
-        'volume_too_high': bool(peak > 0.95)
-    }
-    
-    print(f"  ✓ Volume level: {rms:.4f}")
-    if metrics['volume_too_high']:
-        print("  ⚠️  Warning: Audio clipping detected (volume too high)")
-    
-    return metrics
-
-
 def analyze_single_speaker_presentation(
     audio_path,
     output_json_path,

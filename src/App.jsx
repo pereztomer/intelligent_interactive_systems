@@ -574,6 +574,86 @@ function App() {
     return new Blob([buffer], { type: 'audio/wav' })
   }
 
+  const generateSpeakerProfile = (result) => {
+    // Initialize variables
+    let totalSpeechDuration = 0
+    let weightedWpmSum = 0
+    let weightedPitchRangeSum = 0
+    let weightedEnergyVarSum = 0
+    let allFillers = []
+
+    // Process all speech segments (support both camelCase and snake_case)
+    const segments = result.speechSegments || result.speech_segments
+    if (segments) {
+      segments.forEach(seg => {
+        const dur = seg.duration
+        const features = seg.audioFeatures || seg.audio_features
+
+        totalSpeechDuration += dur
+        weightedWpmSum += (features.wordsPerMinute || features.words_per_minute) * dur
+        weightedPitchRangeSum += (features.pitchRangeHz || features.pitch_range_hz) * dur
+        weightedEnergyVarSum += (features.energyVariance || features.energy_variance) * dur
+        allFillers.push(...(features.fillerWords || features.filler_words || []))
+      })
+    }
+
+    // Calculate weighted averages
+    const avgWpm = totalSpeechDuration > 0 ? weightedWpmSum / totalSpeechDuration : 0
+    const avgPitchRange = totalSpeechDuration > 0 ? weightedPitchRangeSum / totalSpeechDuration : 0
+    const avgEnergyVar = totalSpeechDuration > 0 ? weightedEnergyVarSum / totalSpeechDuration : 0
+
+    const speakingPct = result.pacing?.speakingPercentage || result.pacing_metrics?.speaking_percentage || 0
+    const uniqueFillers = [...new Set(allFillers)]
+
+    // Build profile with separate metrics
+    const profile = {}
+
+    // 1. Pacing Analysis
+    if (avgWpm < 110) {
+      profile.pacing = "The speaker maintains a slow, deliberate pace."
+    } else if (avgWpm <= 140) {
+      profile.pacing = "The speaker communicates at an ideal conversational rate."
+    } else {
+      profile.pacing = "The delivery is rapid, suggesting high urgency."
+    }
+
+    // 2. Fluency Analysis
+    if (speakingPct < 55) {
+      profile.fluency = "The speech is highly fragmented with long silences."
+    } else if (speakingPct <= 75) {
+      profile.fluency = "The flow is natural with balanced pauses."
+    } else {
+      profile.fluency = "The speaker is exceptionally fluent with minimal interruptions."
+    }
+
+    // 3. Expressiveness Analysis
+    if (avgPitchRange < 150) {
+      profile.expressiveness = "The vocal tone is relatively monotone."
+    } else if (avgPitchRange <= 250) {
+      profile.expressiveness = "The voice shows healthy modulation."
+    } else {
+      profile.expressiveness = "The speaker is highly dynamic, using a wide pitch range to emphasize points."
+    }
+
+    // 4. Stability Analysis
+    if (avgEnergyVar < 0.002) {
+      profile.stability = "The speaker exhibits exceptional vocal control, maintaining a very steady and professional volume throughout the delivery."
+    } else if (avgEnergyVar <= 0.007) {
+      profile.stability = "Volume levels are mostly consistent, with natural energy shifts that help maintain listener interest without being erratic."
+    } else {
+      profile.stability = "There are significant fluctuations in vocal energy, which may suggest inconsistent breath control or very intense emotional emphasis."
+    }
+
+    // 5. Filler Words
+    if (uniqueFillers.length > 0) {
+      profile.fillers = `Usage of filler words like '${uniqueFillers.join(", ")}' was noted.`
+    } else {
+      profile.fillers = "The speech is clean, with no detectable filler words."
+    }
+
+    return profile
+  }
+
   const formatBackendResults = (result) => {
     const lines = []
     lines.push('🎯 BACKEND ANALYSIS RESULTS')
@@ -581,28 +661,18 @@ function App() {
     lines.push('')
     lines.push(`⏱️  Duration: ${result.duration.toFixed(1)}s`)
     lines.push('')
-    lines.push('📊 PACING METRICS:')
-    lines.push(`   Speaking time: ${result.pacing.speakingTime.toFixed(1)}s (${result.pacing.speakingPercentage.toFixed(1)}%)`)
-    lines.push(`   Silence time: ${result.pacing.silenceTime.toFixed(1)}s`)
-    lines.push(`   Speech segments: ${result.pacing.segments}`)
-    lines.push(`   Long pauses: ${result.pacing.longPauses}`)
-    lines.push('')
-    
-    if (result.pacing.speakingPercentage < 60) {
-      lines.push('💡 TIP: Consider speaking more - low speaking time detected')
-    } else if (result.pacing.speakingPercentage > 85) {
-      lines.push('✅ GREAT: Good speaking pace!')
-    }
-    
-    if (result.pacing.longPauses > 5) {
-      lines.push('⚠️  Many long pauses detected - work on smoother transitions')
-    }
-    
-    if (result.transcription) {
+
+    // Add Speaker Profile (check for both naming conventions)
+    const segments = result.speechSegments || result.speech_segments
+    if (segments && segments.length > 0) {
+      const profile = generateSpeakerProfile(result)
+      lines.push('👤 SPEAKER PROFILE:')
+      lines.push(`   • Pacing: ${profile.pacing}`)
+      lines.push(`   • Fluency: ${profile.fluency}`)
+      lines.push(`   • Expressiveness: ${profile.expressiveness}`)
+      lines.push(`   • Stability: ${profile.stability}`)
+      lines.push(`   • Fillers: ${profile.fillers}`)
       lines.push('')
-      lines.push('📝 TRANSCRIPTION:')
-      const preview = result.transcription.slice(0, 300)
-      lines.push(`   ${preview}${result.transcription.length > 300 ? '...' : ''}`)
     }
     
     if (result.geminiFeedback) {
