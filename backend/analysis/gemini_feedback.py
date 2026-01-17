@@ -14,6 +14,41 @@ if not api_key:
 genai.configure(api_key=api_key)
 
 
+def _generate_with_fallback(prompt):
+    """
+    Generate content using Gemini with automatic fallback between models.
+    Tries gemini-2.5-flash first, then gemini-2.5-pro if quota exceeded.
+    
+    Args:
+        prompt: The prompt text to send to the model
+    
+    Returns:
+        str: Generated text response
+    
+    Raises:
+        Exception: If both models fail
+    """
+    # Try gemini-2.5-flash first (available and working)
+    try:
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        response = model.generate_content(prompt)
+        return response.text
+    except Exception as e:
+        error_str = str(e).lower()
+        # If quota exceeded, try pro model
+        if 'quota' in error_str or '429' in error_str or 'resourceexhausted' in error_str:
+            print(f"⚠️  Quota exceeded for gemini-2.5-flash, trying gemini-2.5-pro...")
+            try:
+                model = genai.GenerativeModel('gemini-2.5-pro')
+                response = model.generate_content(prompt)
+                return response.text
+            except Exception as e2:
+                raise Exception(f"Both models failed. Flash error: {str(e)}, Pro error: {str(e2)}")
+        else:
+            # For other errors, re-raise immediately
+            raise
+
+
 def generate_presentation_feedback(analysis_json_path, navigation_json_path, pdf_path=None):
     """
     Generate presentation feedback using Gemini AI
@@ -92,11 +127,8 @@ Focus on the most critical issues from:
 
 Format: One sentence per point, each point on a new line, no explanations."""
 
-    # Generate feedback
-    model = genai.GenerativeModel('gemini-2.0-flash-exp')
-    response = model.generate_content(prompt)
-    
-    return response.text
+    # Generate feedback using helper function with automatic fallback
+    return _generate_with_fallback(prompt)
 
 
 def generate_session_feedback(session_dir):
@@ -146,11 +178,8 @@ Focus on:
 
 Format: One sentence per point, no explanations."""
 
-    # Generate feedback
-    model = genai.GenerativeModel('gemini-2.0-flash-exp')
-    response = model.generate_content(prompt)
-    
-    return response.text
+    # Generate feedback using helper function with automatic fallback
+    return _generate_with_fallback(prompt)
 
 
 if __name__ == '__main__':
