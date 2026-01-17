@@ -1116,21 +1116,41 @@ function App() {
                 {currentSession?.name || 'Session'}
                 {attemptNumber && ` - Attempt ${attemptNumber}`}
               </h2>
-              <button 
-                className="back-button"
-                onClick={async () => {
-                  if (currentSession) {
-                    await loadSession(currentSession.id)
-                    setCurrentView('session')
-                  } else {
-                    setCurrentView('sessionList')
-                  }
-                  setFile(null)
-                  setCurrentAttempt(null)
-                }}
-              >
-                ← Back to Session
-              </button>
+              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                {currentAttempt && (
+                  <button
+                    className="analyze-button"
+                    onClick={async () => {
+                      if (currentAttempt && currentAttempt.id) {
+                        await handleAnalyzeAttempt(currentAttempt.id)
+                      }
+                    }}
+                    disabled={analyzing[currentAttempt?.id] || !pyodide}
+                    style={{ 
+                      padding: '0.75rem 1.5rem', 
+                      fontSize: '1rem',
+                      fontWeight: 600
+                    }}
+                  >
+                    {!pyodide ? 'Loading Python...' : analyzing[currentAttempt?.id] ? 'Analyzing...' : '📊 Analyze Attempt'}
+                  </button>
+                )}
+                <button 
+                  className="back-button"
+                  onClick={async () => {
+                    if (currentSession) {
+                      await loadSession(currentSession.id)
+                      setCurrentView('session')
+                    } else {
+                      setCurrentView('sessionList')
+                    }
+                    setFile(null)
+                    setCurrentAttempt(null)
+                  }}
+                >
+                  ← Back to Session
+                </button>
+              </div>
             </div>
           )}
 
@@ -1315,26 +1335,6 @@ function App() {
                   </div>
                 </div>
               )}
-              
-              {/* Analyze button */}
-              <div style={{ margin: '1.5rem 0', textAlign: 'center' }}>
-                <button
-                  className="analyze-button"
-                  onClick={async () => {
-                    if (currentAttempt && currentAttempt.id) {
-                      await handleAnalyzeAttempt(currentAttempt.id)
-                    }
-                  }}
-                  disabled={analyzing[currentAttempt?.id] || !pyodide}
-                  style={{ 
-                    padding: '1rem 2rem', 
-                    fontSize: '1.1rem',
-                    fontWeight: 600
-                  }}
-                >
-                  {!pyodide ? 'Loading Python...' : analyzing[currentAttempt?.id] ? 'Analyzing...' : '📊 Analyze Attempt'}
-                </button>
-              </div>
               
               {currentAttempt.navigationEvents && currentAttempt.navigationEvents.length > 0 && (
                 <div className="navigation-tracking-box">
