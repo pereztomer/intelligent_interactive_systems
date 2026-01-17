@@ -385,14 +385,24 @@ def transcribe_audio(audio_path, language='en'):
             'long_pauses_count': long_pauses
         }
         
-        # Simplify segments by removing technical Whisper metadata
+        # Simplify segments by removing technical Whisper metadata, but keep word timestamps
         simplified_segments = []
         for seg in result['segments']:
+            # Include word-level timestamps for precise referencing
+            words_with_timestamps = []
+            for word in seg.get('words', []):
+                words_with_timestamps.append({
+                    'word': word['word'].strip(),
+                    'start': round(word['start'], 2),
+                    'end': round(word['end'], 2)
+                })
+            
             simplified_segments.append({
                 'id': seg['id'],
                 'start': seg['start'],
                 'end': seg['end'],
-                'text': seg['text']
+                'text': seg['text'],
+                'words': words_with_timestamps  # Include word timestamps
             })
         
         return {
@@ -505,7 +515,8 @@ def analyze_single_speaker_presentation(
             },
             'transcription': {
                 'text': transcription['text'],
-                'language': transcription['language']
+                'language': transcription['language'],
+                'segments': transcription.get('segments', [])  # Include segments with word timestamps
             } if transcription and transcription['success'] else None,
             'pause_analysis': transcription.get('pause_analysis') if transcription and transcription.get('success') else None
         }

@@ -78,8 +78,28 @@ PRESENTATION ANALYSIS DATA:
 - Speech segments: {analysis_data.get('pacing_metrics', {}).get('num_segments', 0)}
 - Long pauses: {analysis_data.get('pacing_metrics', {}).get('num_long_pauses', 0)}
 
-TRANSCRIPTION:
-{analysis_data.get('transcription', {}).get('text', 'No transcription available')}
+TRANSCRIPTION WITH WORD TIMESTAMPS:
+"""
+    # Add transcription with word timestamps if available
+    transcription_segments = analysis_data.get('transcription', {}).get('segments', [])
+    if transcription_segments:
+        # Show first 10 segments with word timestamps
+        for seg in transcription_segments[:10]:
+            words = seg.get('words', [])
+            if words:
+                # Format: word[timestamp] word[timestamp]...
+                word_list = []
+                for word in words:
+                    word_list.append(f"{word['word']}[{word['start']:.1f}s]")
+                prompt += f"[{seg['start']:.1f}s-{seg['end']:.1f}s] {' '.join(word_list)}\n"
+            else:
+                # Fallback if no word timestamps
+                prompt += f"[{seg['start']:.1f}s-{seg['end']:.1f}s] {seg.get('text', '')}\n"
+    else:
+        # Fallback to plain text
+        prompt += analysis_data.get('transcription', {}).get('text', 'No transcription available')
+    
+    prompt += """
 
 SPEECH SEGMENTS WITH METRICS:
 """

@@ -119,6 +119,7 @@ def analyze():
                 'longPauses': result['pacing_metrics']['num_long_pauses'],
             },
             'transcription': result['transcription']['text'] if result['transcription'] else None,
+            'transcriptionSegments': result['transcription'].get('segments', []) if result['transcription'] else None,
             'geminiFeedback': gemini_feedback  # Include Gemini feedback if available
         }
         

@@ -622,8 +622,18 @@ function App() {
     if (result.transcription) {
       lines.push('')
       lines.push('📝 TRANSCRIPTION:')
-      const preview = result.transcription.slice(0, 300)
-      lines.push(`   ${preview}${result.transcription.length > 300 ? '...' : ''}`)
+      // Store transcription segments separately for interactive display
+      if (result.transcriptionSegments && result.transcriptionSegments.length > 0) {
+        // Show first segment as preview with note about hover
+        const firstSeg = result.transcriptionSegments[0]
+        const preview = firstSeg.text.slice(0, 200)
+        lines.push(`   ${preview}${firstSeg.text.length > 200 ? '...' : ''}`)
+        lines.push(`   (Hover over words in the full transcription below to see timestamps)`)
+      } else {
+        // Fallback to plain text preview
+        const preview = result.transcription.slice(0, 300)
+        lines.push(`   ${preview}${result.transcription.length > 300 ? '...' : ''}`)
+      }
     }
     
     return lines.join('\n')
@@ -720,8 +730,11 @@ function App() {
         // Format results for display
         const feedback = formatBackendResults(result)
         
-        // Save feedback
-        await updateAttempt(attemptId, { attemptFeedback: feedback })
+        // Save feedback and transcription segments for interactive display
+        await updateAttempt(attemptId, { 
+          attemptFeedback: feedback,
+          transcriptionSegments: result.transcriptionSegments || null
+        })
         await loadSession(currentSession.id)
         
         alert('Backend analysis completed!\n\nClick "View Feedback" to see results.')
@@ -1245,6 +1258,7 @@ function App() {
                     controls
                     src={currentAttempt.videoData}
                     className="attempt-video"
+                    id="attempt-video-player"
                   >
                     Your browser does not support video playback.
                   </video>
@@ -1254,6 +1268,54 @@ function App() {
                     {currentAttempt.navigationEvents && currentAttempt.navigationEvents.length > 0 && (
                       <p><strong>Page Navigations:</strong> {currentAttempt.navigationEvents.length - 1} time(s)</p>
                     )}
+                  </div>
+                </div>
+              )}
+              
+              {/* Interactive Transcription with Hover Timestamps */}
+              {currentAttempt.transcriptionSegments && currentAttempt.transcriptionSegments.length > 0 && (
+                <div className="transcription-box">
+                  <h3>📝 Full Transcription</h3>
+                  <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '1rem' }}>
+                    Hover over words to see timestamps • Click to jump to that time in the video
+                  </p>
+                  <div className="transcription-content">
+                    {currentAttempt.transcriptionSegments.map((seg, segIdx) => (
+                      <div key={segIdx} className="transcription-segment">
+                        {seg.words && seg.words.length > 0 ? (
+                          seg.words.map((word, wordIdx) => (
+                            <span
+                              key={wordIdx}
+                              className="transcription-word"
+                              title={`Time: ${formatTime(word.start)} - ${formatTime(word.end)}`}
+                              onClick={() => {
+                                const video = document.getElementById('attempt-video-player')
+                                if (video) {
+                                  video.currentTime = word.start
+                                  video.play()
+                                }
+                              }}
+                              style={{
+                                cursor: 'pointer',
+                                padding: '2px 1px',
+                                borderRadius: '3px',
+                                transition: 'background-color 0.2s'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.backgroundColor = '#e3f2fd'
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.backgroundColor = 'transparent'
+                              }}
+                            >
+                              {word.word}
+                            </span>
+                          ))
+                        ) : (
+                          <span>{seg.text}</span>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}

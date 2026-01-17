@@ -972,6 +972,46 @@
   gap: 2rem;
 }
 
+.transcription-box {
+  background: var(--bg-card, rgba(255, 255, 255, 0.95));
+  padding: 1.5rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border-left: 4px solid #4a90e2;
+}
+
+.transcription-box h3 {
+  margin: 0 0 0.5rem 0;
+  color: #2d3748;
+  font-size: 1.3rem;
+}
+
+.transcription-content {
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  line-height: 1.8;
+  font-size: 1rem;
+  color: #2d3748;
+}
+
+.transcription-segment {
+  margin-bottom: 0.5rem;
+}
+
+.transcription-word {
+  display: inline;
+  margin-right: 0.2rem;
+  position: relative;
+}
+
+.transcription-word:hover {
+  background-color: #e3f2fd !important;
+  border-radius: 3px;
+}
+
 .attempt-video-player {
   background: var(--bg-card, rgba(255, 255, 255, 0.95));
   padding: 1.5rem;
