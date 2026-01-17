@@ -576,9 +576,30 @@ function App() {
 
   const formatBackendResults = (result) => {
     const lines = []
-    lines.push('🎯 BACKEND ANALYSIS RESULTS')
-    lines.push('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    lines.push('')
+    
+    // Put feedback at the top if available
+    if (result.geminiFeedback) {
+      lines.push('🤖 AI PRESENTATION COACH FEEDBACK')
+      lines.push('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+      lines.push('')
+      // Split feedback into lines - each sentence on a new line
+      const feedbackLines = result.geminiFeedback
+        .split(/[.!?]\s+/)
+        .filter(line => line.trim().length > 0)
+        .map(line => {
+          const trimmed = line.trim()
+          // Add punctuation if missing
+          if (trimmed && !trimmed.match(/[.!?]$/)) {
+            return trimmed + '.'
+          }
+          return trimmed
+        })
+      feedbackLines.forEach(line => lines.push(line))
+      lines.push('')
+      lines.push('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+      lines.push('')
+    }
+    
     lines.push(`⏱️  Duration: ${result.duration.toFixed(1)}s`)
     lines.push('')
     lines.push('📊 PACING METRICS:')
@@ -604,31 +625,6 @@ function App() {
       const preview = result.transcription.slice(0, 300)
       lines.push(`   ${preview}${result.transcription.length > 300 ? '...' : ''}`)
     }
-    
-    if (result.geminiFeedback) {
-      lines.push('')
-      lines.push('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-      lines.push('🤖 AI PRESENTATION COACH FEEDBACK')
-      lines.push('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-      lines.push('')
-      // Split feedback into lines - each sentence on a new line
-      const feedbackLines = result.geminiFeedback
-        .split(/[.!?]\s+/)
-        .filter(line => line.trim().length > 0)
-        .map(line => {
-          const trimmed = line.trim()
-          // Add punctuation if missing
-          if (trimmed && !trimmed.match(/[.!?]$/)) {
-            return trimmed + '.'
-          }
-          return trimmed
-        })
-      feedbackLines.forEach(line => lines.push(line))
-    }
-    
-    lines.push('')
-    lines.push('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    lines.push('✨ Full backend analysis complete!')
     
     return lines.join('\n')
   }
@@ -1233,6 +1229,15 @@ function App() {
 
           {currentAttempt && (
             <div className="attempt-details-section">
+              {currentAttempt.attemptFeedback && (
+                <div className="attempt-feedback-box">
+                  <h3>Analysis Results</h3>
+                  <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>
+                    {currentAttempt.attemptFeedback}
+                  </pre>
+                </div>
+              )}
+              
               {currentAttempt.videoData && (
                 <div className="attempt-video-player">
                   <h3>Recording</h3>
@@ -1300,15 +1305,6 @@ function App() {
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
-              
-              {currentAttempt.attemptFeedback && (
-                <div className="attempt-feedback-box">
-                  <h3>Analysis Results</h3>
-                  <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>
-                    {currentAttempt.attemptFeedback}
-                  </pre>
                 </div>
               )}
             </div>
