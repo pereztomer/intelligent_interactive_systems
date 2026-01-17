@@ -84,11 +84,13 @@ TRANSCRIPTION:
 SPEECH SEGMENTS WITH METRICS:
 """
     
-    # Add segment details
+    # Add segment details with timestamps
     for seg in analysis_data.get('speech_segments', [])[:5]:  # Limit to first 5 segments
         features = seg.get('audio_features', {})
+        start_time = seg.get('start', 0)
+        end_time = seg.get('end', 0)
         prompt += f"""
-- Segment {seg.get('segment_id', '')}: {seg.get('duration', 0):.1f}s
+- Segment {seg.get('segment_id', '')}: {seg.get('duration', 0):.1f}s (at {start_time:.1f}s - {end_time:.1f}s)
   Text: {seg.get('text', '')[:100]}...
   Words/min: {features.get('words_per_minute', 0):.1f}
   Filler words: {', '.join(features.get('filler_words', [])) if features.get('filler_words') else 'None'}
@@ -119,13 +121,16 @@ SLIDE NAVIGATION:
     prompt += """
 
 Provide VERY SHORT feedback: exactly 2-3 main points, each point a single short sentence.
+For each point, include a time reference (e.g., "at 15.3s" or "around 0:30") to cite where in the presentation this issue occurred.
 Focus on the most critical issues from:
 - Pacing and timing
 - Filler word usage
 - Speaking clarity and speed
 - Slide navigation patterns
 
-Format: One sentence per point, each point on a new line, no explanations."""
+Format: One sentence per point, each point on a new line, include time references in parentheses, no explanations.
+Example: "Reduce filler words like 'um' and 'so' (noted at 12.5s and 28.3s)."
+"""
 
     # Generate feedback using helper function with automatic fallback
     return _generate_with_fallback(prompt)
