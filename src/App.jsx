@@ -622,15 +622,11 @@ function App() {
     if (result.transcription) {
       lines.push('')
       lines.push('📝 TRANSCRIPTION:')
-      // Store transcription segments separately for interactive display
+      // Simple message pointing to full transcription below
       if (result.transcriptionSegments && result.transcriptionSegments.length > 0) {
-        // Show first segment as preview with note about hover
-        const firstSeg = result.transcriptionSegments[0]
-        const preview = firstSeg.text.slice(0, 200)
-        lines.push(`   ${preview}${firstSeg.text.length > 200 ? '...' : ''}`)
-        lines.push(`   (Hover over words in the full transcription below to see timestamps)`)
+        lines.push('   Full transcription with timestamps is available below.')
       } else {
-        // Fallback to plain text preview
+        // Fallback to plain text preview if no segments
         const preview = result.transcription.slice(0, 300)
         lines.push(`   ${preview}${result.transcription.length > 300 ? '...' : ''}`)
       }
