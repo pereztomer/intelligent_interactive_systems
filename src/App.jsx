@@ -776,11 +776,17 @@ function App() {
             <div className="landing-main">
               <div className="landing-text">
                 <p className="problem-text">
-                  Strong presentations depend on clarity, pacing, and alignment between spoken content and slides. 
-                  Most people practice alone due to shyness, lack of listening audience, and receive little objective feedback. 
-                  While existing tools effectively analyze speech or slide mechanics individually, the market remains fragmented. 
-                  There is a lack of accessible, unified systems that evaluate delivery, slide usage, and content coherence in a single interface. 
-                  The goal is to create an AI-based coach that provides concrete, personalized insights to help users significantly improve their communication skills.
+                  Record your presentation with slides and receive AI-powered feedback on pacing, filler words, and speaking clarity. 
+                  Upload your PDF, practice your delivery, and get instant analysis with personalized coaching tips to improve your presentation skills.
+                </p>
+                <p style={{ 
+                  marginTop: '1rem', 
+                  fontSize: '0.9rem', 
+                  color: '#666', 
+                  fontStyle: 'italic' 
+                }}>
+                  Note: This system uses AI-based transcription which may occasionally misunderstand speech, especially for non-native English speakers. 
+                  For best results, please speak in English.
                 </p>
               </div>
               <div className="landing-image">
