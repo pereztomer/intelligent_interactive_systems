@@ -385,15 +385,19 @@ def transcribe_audio(audio_path, language='en'):
             'long_pauses_count': long_pauses
         }
         
-        # Simplify segments by removing technical Whisper metadata
+        # Simplify segments by removing technical Whisper metadata but keeping word timestamps
         simplified_segments = []
         for seg in result['segments']:
-            simplified_segments.append({
+            segment_data = {
                 'id': seg['id'],
                 'start': seg['start'],
                 'end': seg['end'],
                 'text': seg['text']
-            })
+            }
+            # Include word-level timestamps if available
+            if 'words' in seg and seg['words']:
+                segment_data['words'] = seg['words']
+            simplified_segments.append(segment_data)
         
         return {
             'success': True,
