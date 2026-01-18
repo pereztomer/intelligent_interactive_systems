@@ -1412,26 +1412,6 @@ function App() {
                 </div>
               )}
               
-              {/* Analyze button */}
-              <div style={{ margin: '1.5rem 0', textAlign: 'center' }}>
-                <button
-                  className="analyze-button"
-                  onClick={async () => {
-                    if (currentAttempt && currentAttempt.id) {
-                      await handleAnalyzeAttempt(currentAttempt.id)
-                    }
-                  }}
-                  disabled={analyzing[currentAttempt?.id] || !pyodide}
-                  style={{ 
-                    padding: '1rem 2rem', 
-                    fontSize: '1.1rem',
-                    fontWeight: 600
-                  }}
-                >
-                  {!pyodide ? 'Loading Python...' : analyzing[currentAttempt?.id] ? 'Analyzing...' : '📊 Analyze Attempt'}
-                </button>
-              </div>
-              
               {/* 2. Video Second */}
               {currentAttempt.videoData && (
                 <div className="attempt-video-player">

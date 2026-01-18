@@ -17,9 +17,9 @@ client = genai.Client(api_key=api_key)
 
 
 # List available models to see what's available
-# print("Available models:")
-# for model in client.models.list():
-#     print(f"- {model.name}")
+print("Available models:")
+for model in client.models.list():
+    print(f"- {model.name}")
     
 
 # Use the correct model name (gemini-pro is now gemini-1.5-flash or gemini-1.5-pro)

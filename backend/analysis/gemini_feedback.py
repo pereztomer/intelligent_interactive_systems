@@ -7,6 +7,7 @@ from google import genai
 # Load environment variables
 load_dotenv()
 api_key = os.getenv('GOOGLE_API_KEY')
+GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-2.5-flash')  # Default to gemini-2.5-flash
 
 if not api_key:
     raise ValueError("GOOGLE_API_KEY not found in .env file")
@@ -115,7 +116,7 @@ IMPROVEMENT & PRESERVATION:
 """
     # Generate feedback with token limit
     response = client.models.generate_content(
-        model='gemini-2.0-flash-exp',
+        model=GEMINI_MODEL,
         contents=prompt,
         config=genai.types.GenerateContentConfig(
             max_output_tokens=20000
@@ -174,7 +175,7 @@ Format: One sentence per point, no explanations."""
 
     # Generate feedback
     response = client.models.generate_content(
-        model='gemini-2.0-flash-exp',
+        model=GEMINI_MODEL,
         contents=prompt
     )
     
