@@ -17,7 +17,7 @@ client = genai.Client(api_key=api_key)
 SYSTEM_PROMPT = """You are an experienced presentation teacher. Your role is to provide clear, actionable feedback to help students improve their presentation skills. Focus on what was done well and what needs improvement. Be specific, encouraging, and constructive."""
 
 
-def generate_presentation_feedback(analysis_json_path, navigation_json_path, pdf_content_path=None):
+def generate_presentation_feedback(analysis_json_path, navigation_json_path, pdf_content_path):
     """
     Generate presentation feedback using Gemini AI
     
@@ -94,34 +94,25 @@ Analyze the presentation and provide feedback in EXACTLY 3 sections:
 1. CONTENT ANALYSIS:
    - Compare what the user said (transcription) with what's written on the slides (PDF content)
    - Did they explain the slides in a logical, coherent way?
-   - Did they cover the key points from the slides?
-   - Was the explanation clear and well-structured?
-   Provide 2-3 short sentences.
 
 2. TIMING ANALYSIS:
-   - How did they divide time across slides?
-   - Did they rush through any slides (too fast)?
-   - Did they spend too long on any slides?
-   - Was the pacing balanced?
-   Provide 2-3 short sentences.
+   - How did they divide time across slides, was it too fast or too long?
 
 3. IMPROVEMENT & PRESERVATION:
    - What should they improve? (2 specific points)
-   - What should they preserve/keep doing well? (1 specific point)
-   Be direct and actionable.
+   - What should they preserve/keep doing well? (2 specific point)
 
 Format:
 CONTENT:
-[2-3 sentences analyzing content quality]
+[3 bullet points analyzing content quality]
 
 TIMING:
-[2-3 sentences analyzing time management]
+[2 bullet points analyzing time management]
 
 IMPROVEMENT & PRESERVATION:
-- Improve: [specific action]
-- Improve: [specific action]
-- Preserve: [what they did well]"""
+[4 bullet points (2 improvement, 2 preservation)]
 
+"""
     # Generate feedback with token limit
     response = client.models.generate_content(
         model='gemini-2.0-flash-exp',

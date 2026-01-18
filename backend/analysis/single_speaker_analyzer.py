@@ -473,7 +473,8 @@ def analyze_single_speaker_presentation(
             },
             'transcription': {
                 'text': transcription['text'],
-                'language': transcription['language']
+                'language': transcription['language'],
+                'segments': transcription.get('segments', [])  # Include segments with word timestamps
             } if transcription and transcription['success'] else None,
             'pause_analysis': transcription.get('pause_analysis') if transcription and transcription.get('success') else None
         }

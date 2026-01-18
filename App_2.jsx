@@ -574,122 +574,62 @@ function App() {
     return new Blob([buffer], { type: 'audio/wav' })
   }
 
-  const generateSpeakerProfile = (result) => {
-    // Initialize variables
-    let totalSpeechDuration = 0
-    let weightedWpmSum = 0
-    let weightedPitchRangeSum = 0
-    let weightedEnergyVarSum = 0
-    let allFillers = []
-
-    // Process all speech segments (support both camelCase and snake_case)
-    const segments = result.speechSegments || result.speech_segments
-    if (segments) {
-      segments.forEach(seg => {
-        const dur = seg.duration
-        const features = seg.audioFeatures || seg.audio_features
-
-        totalSpeechDuration += dur
-        weightedWpmSum += (features.wordsPerMinute || features.words_per_minute) * dur
-        weightedPitchRangeSum += (features.pitchRangeHz || features.pitch_range_hz) * dur
-        weightedEnergyVarSum += (features.energyVariance || features.energy_variance) * dur
-        allFillers.push(...(features.fillerWords || features.filler_words || []))
-      })
-    }
-
-    // Calculate weighted averages
-    const avgWpm = totalSpeechDuration > 0 ? weightedWpmSum / totalSpeechDuration : 0
-    const avgPitchRange = totalSpeechDuration > 0 ? weightedPitchRangeSum / totalSpeechDuration : 0
-    const avgEnergyVar = totalSpeechDuration > 0 ? weightedEnergyVarSum / totalSpeechDuration : 0
-
-    const speakingPct = result.pacing?.speakingPercentage || result.pacing_metrics?.speaking_percentage || 0
-    const uniqueFillers = [...new Set(allFillers)]
-
-    // Build profile with separate metrics
-    const profile = {}
-
-    // 1. Pacing Analysis
-    if (avgWpm < 110) {
-      profile.pacing = "The speaker maintains a slow, deliberate pace."
-    } else if (avgWpm <= 140) {
-      profile.pacing = "The speaker communicates at an ideal conversational rate."
-    } else {
-      profile.pacing = "The delivery is rapid, suggesting high urgency."
-    }
-
-    // 2. Fluency Analysis
-    if (speakingPct < 55) {
-      profile.fluency = "The speech is highly fragmented with long silences."
-    } else if (speakingPct <= 75) {
-      profile.fluency = "The flow is natural with balanced pauses."
-    } else {
-      profile.fluency = "The speaker is exceptionally fluent with minimal interruptions."
-    }
-
-    // 3. Expressiveness Analysis
-    if (avgPitchRange < 150) {
-      profile.expressiveness = "The vocal tone is relatively monotone."
-    } else if (avgPitchRange <= 250) {
-      profile.expressiveness = "The voice shows healthy modulation."
-    } else {
-      profile.expressiveness = "The speaker is highly dynamic, using a wide pitch range to emphasize points."
-    }
-
-    // 4. Stability Analysis
-    if (avgEnergyVar < 0.002) {
-      profile.stability = "The speaker exhibits exceptional vocal control, maintaining a very steady and professional volume throughout the delivery."
-    } else if (avgEnergyVar <= 0.007) {
-      profile.stability = "Volume levels are mostly consistent, with natural energy shifts that help maintain listener interest without being erratic."
-    } else {
-      profile.stability = "There are significant fluctuations in vocal energy, which may suggest inconsistent breath control or very intense emotional emphasis."
-    }
-
-    // 5. Filler Words
-    if (uniqueFillers.length > 0) {
-      profile.fillers = `Usage of filler words like '${uniqueFillers.join(", ")}' was noted.`
-    } else {
-      profile.fillers = "The speech is clean, with no detectable filler words."
-    }
-
-    return profile
-  }
-
-  const formatGeminiFeedback = (result) => {
-    if (!result.geminiFeedback) return null
-    
+  const formatBackendResults = (result) => {
     const lines = []
-    // Split feedback into lines - each sentence on a new line
-    const feedbackLines = result.geminiFeedback
-      .split(/[.!?]\s+/)
-      .filter(line => line.trim().length > 0)
-      .map(line => {
-        const trimmed = line.trim()
-        // Add punctuation if missing
-        if (trimmed && !trimmed.match(/[.!?]$/)) {
-          return trimmed + '.'
-        }
-        return trimmed
-      })
-    feedbackLines.forEach(line => lines.push(line))
     
-    return lines.join('\n')
-  }
-
-  const formatAnalysisResults = (result) => {
-    const lines = []
+    // Put feedback at the top if available
+    if (result.geminiFeedback) {
+      lines.push('🤖 AI PRESENTATION COACH FEEDBACK')
+      lines.push('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+      lines.push('')
+      // Split feedback into lines - each sentence on a new line
+      const feedbackLines = result.geminiFeedback
+        .split(/[.!?]\s+/)
+        .filter(line => line.trim().length > 0)
+        .map(line => {
+          const trimmed = line.trim()
+          // Add punctuation if missing
+          if (trimmed && !trimmed.match(/[.!?]$/)) {
+            return trimmed + '.'
+          }
+          return trimmed
+        })
+      feedbackLines.forEach(line => lines.push(line))
+      lines.push('')
+      lines.push('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+      lines.push('')
+    }
+    
     lines.push(`⏱️  Duration: ${result.duration.toFixed(1)}s`)
     lines.push('')
-
-    // Add Speaker Profile (check for both naming conventions)
-    const segments = result.speechSegments || result.speech_segments
-    if (segments && segments.length > 0) {
-      const profile = generateSpeakerProfile(result)
-      lines.push('👤 SPEAKER PROFILE:')
-      lines.push(`   • Pacing: ${profile.pacing}`)
-      lines.push(`   • Fluency: ${profile.fluency}`)
-      lines.push(`   • Expressiveness: ${profile.expressiveness}`)
-      lines.push(`   • Stability: ${profile.stability}`)
-      lines.push(`   • Fillers: ${profile.fillers}`)
+    lines.push('📊 PACING METRICS:')
+    lines.push(`   Speaking time: ${result.pacing.speakingTime.toFixed(1)}s (${result.pacing.speakingPercentage.toFixed(1)}%)`)
+    lines.push(`   Silence time: ${result.pacing.silenceTime.toFixed(1)}s`)
+    lines.push(`   Speech segments: ${result.pacing.segments}`)
+    lines.push(`   Long pauses: ${result.pacing.longPauses}`)
+    lines.push('')
+    
+    if (result.pacing.speakingPercentage < 60) {
+      lines.push('💡 TIP: Consider speaking more - low speaking time detected')
+    } else if (result.pacing.speakingPercentage > 85) {
+      lines.push('✅ GREAT: Good speaking pace!')
+    }
+    
+    if (result.pacing.longPauses > 5) {
+      lines.push('⚠️  Many long pauses detected - work on smoother transitions')
+    }
+    
+    if (result.transcription) {
+      lines.push('')
+      lines.push('📝 TRANSCRIPTION:')
+      // Simple message pointing to full transcription below
+      if (result.transcriptionSegments && result.transcriptionSegments.length > 0) {
+        lines.push('   Full transcription with timestamps is available below.')
+      } else {
+        // Fallback to plain text preview if no segments
+        const preview = result.transcription.slice(0, 300)
+        lines.push(`   ${preview}${result.transcription.length > 300 ? '...' : ''}`)
+      }
     }
     
     return lines.join('\n')
@@ -783,23 +723,15 @@ function App() {
         
         const result = await response.json()
         
-        // Debug logging
-        console.log('📊 Analysis result:', result)
-        console.log('📝 Transcription segments:', result.transcriptionSegments)
-        
         // Format results for display
-        const geminiFeedback = formatGeminiFeedback(result)
-        const analysisResults = formatAnalysisResults(result)
+        const feedback = formatBackendResults(result)
         
-        // Save both feedbacks separately along with transcription segments
+        // Save feedback and transcription segments for interactive display
         await updateAttempt(attemptId, { 
-          geminiFeedback: geminiFeedback,
-          analysisResults: analysisResults,
+          attemptFeedback: feedback,
           transcriptionSegments: result.transcriptionSegments || null
         })
         await loadSession(currentSession.id)
-        
-        console.log('💾 Saved transcription segments:', result.transcriptionSegments?.length || 0, 'segments')
         
         alert('Backend analysis completed!\n\nClick "View Feedback" to see results.')
       } else {
@@ -836,77 +768,6 @@ function App() {
     }
   }
 
-  // Handle AI feedback generation (Gemini only)
-  const handleGenerateAIFeedback = async (attemptId) => {
-    setAnalyzing(prev => ({ ...prev, [`ai_${attemptId}`]: true }))
-    
-    try {
-      if (!currentSession) {
-        throw new Error('No session loaded')
-      }
-
-      const attempt = currentSession.attempts?.find(a => a.id === attemptId)
-      if (!attempt) {
-        throw new Error('Attempt not found')
-      }
-
-      // Check if backend server is running
-      const useBackend = await checkBackendAvailable()
-      
-      if (!useBackend) {
-        throw new Error('Backend server is not running. Please start the backend to use AI Feedback.')
-      }
-
-      // Check if attempt has audio path (analysis must have been run first)
-      if (!attempt.audioPath) {
-        throw new Error('Please run full Analysis first before generating AI Feedback.')
-      }
-      
-      console.log('🤖 Generating AI feedback only...')
-      
-      // Call Gemini feedback endpoint
-      const response = await fetch('http://localhost:5000/generate_feedback', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          audioPath: attempt.audioPath
-        })
-      })
-      
-      if (!response.ok) {
-        throw new Error('AI feedback generation failed: ' + response.statusText)
-      }
-      
-      const result = await response.json()
-      
-      // Format and save Gemini feedback separately
-      const geminiFeedback = result.feedback
-        .split(/[.!?]\s+/)
-        .filter(line => line.trim().length > 0)
-        .map(line => {
-          const trimmed = line.trim()
-          if (trimmed && !trimmed.match(/[.!?]$/)) {
-            return trimmed + '.'
-          }
-          return trimmed
-        })
-        .join('\n')
-      
-      // Save Gemini feedback
-      await updateAttempt(attemptId, { geminiFeedback: geminiFeedback })
-      await loadSession(currentSession.id)
-      
-      alert('AI Feedback generated!\n\nClick "View Feedback" to see results.')
-    } catch (err) {
-      console.error('Error generating AI feedback:', err)
-      alert('Error generating AI feedback: ' + err.message)
-    } finally {
-      setAnalyzing(prev => ({ ...prev, [`ai_${attemptId}`]: false }))
-    }
-  }
-
   // ========== VIEW RENDERS ==========
 
   // Landing Page
@@ -920,11 +781,17 @@ function App() {
             <div className="landing-main">
               <div className="landing-text">
                 <p className="problem-text">
-                  Strong presentations depend on clarity, pacing, and alignment between spoken content and slides. 
-                  Most people practice alone due to shyness, lack of listening audience, and receive little objective feedback. 
-                  While existing tools effectively analyze speech or slide mechanics individually, the market remains fragmented. 
-                  There is a lack of accessible, unified systems that evaluate delivery, slide usage, and content coherence in a single interface. 
-                  The goal is to create an AI-based coach that provides concrete, personalized insights to help users significantly improve their communication skills.
+                  Record your presentation with slides and receive AI-powered feedback on pacing, filler words, and speaking clarity. 
+                  Upload your PDF, practice your delivery, and get instant analysis with personalized coaching tips to improve your presentation skills.
+                </p>
+                <p style={{ 
+                  marginTop: '1rem', 
+                  fontSize: '0.9rem', 
+                  color: '#666', 
+                  fontStyle: 'italic' 
+                }}>
+                  Note: This system uses AI-based transcription which may occasionally misunderstand speech, especially for non-native English speakers. 
+                  For best results, please speak in English.
                 </p>
               </div>
               <div className="landing-image">
@@ -1162,7 +1029,7 @@ function App() {
                       {formatDate(attempt.timestamp)} • {formatTime(attempt.duration || 0)}
                     </p>
                     <p className="attempt-file">{attempt.fileName || 'Presentation'}</p>
-                    {(attempt.geminiFeedback || attempt.analysisResults) && (
+                    {attempt.attemptFeedback && (
                       <p className="feedback-preview">📊 Feedback Available</p>
                     )}
                   </div>
@@ -1175,20 +1042,9 @@ function App() {
                       }}
                       disabled={analyzing[attempt.id] || !pyodide}
                     >
-                      {!pyodide ? '⏳ Loading Python...' : analyzing[attempt.id] ? '⏳ Analyzing...' : '📊 Analyze'}
+                      {!pyodide ? 'Loading Python...' : analyzing[attempt.id] ? 'Analyzing...' : 'Analyze'}
                     </button>
-                    <button
-                      className="analyze-button secondary"
-                      onClick={async (e) => {
-                        e.stopPropagation()
-                        await handleGenerateAIFeedback(attempt.id)
-                      }}
-                      disabled={analyzing[`ai_${attempt.id}`] || !attempt.audioPath}
-                      title={!attempt.audioPath ? 'Run full Analysis first' : 'Generate AI feedback using Gemini'}
-                    >
-                      {analyzing[`ai_${attempt.id}`] ? '⏳ Generating...' : '🤖 AI Feedback'}
-                    </button>
-                    {(attempt.geminiFeedback || attempt.analysisResults) && (
+                    {attempt.attemptFeedback && (
                       <button
                         className="analyze-button"
                         onClick={(e) => {
@@ -1196,7 +1052,7 @@ function App() {
                           handleSelectAttempt(attempt)
                         }}
                       >
-                        👁️ View Feedback
+                        View Feedback
                       </button>
                     )}
                     <button
@@ -1207,7 +1063,7 @@ function App() {
                       }}
                       title="Export recording for backend analysis"
                     >
-                      💾 Export
+                      Export
                     </button>
                     <button
                       className="delete-button"
@@ -1402,45 +1258,23 @@ function App() {
 
           {currentAttempt && (
             <div className="attempt-details-section">
-              {/* 1. Gemini Feedback First */}
-              {currentAttempt.geminiFeedback && (
+              {currentAttempt.attemptFeedback && (
                 <div className="attempt-feedback-box">
-                  <h3>🤖 AI Presentation Coach Feedback</h3>
+                  <h3>Analysis Results</h3>
                   <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>
-                    {currentAttempt.geminiFeedback}
+                    {currentAttempt.attemptFeedback}
                   </pre>
                 </div>
               )}
               
-              {/* Analyze button */}
-              <div style={{ margin: '1.5rem 0', textAlign: 'center' }}>
-                <button
-                  className="analyze-button"
-                  onClick={async () => {
-                    if (currentAttempt && currentAttempt.id) {
-                      await handleAnalyzeAttempt(currentAttempt.id)
-                    }
-                  }}
-                  disabled={analyzing[currentAttempt?.id] || !pyodide}
-                  style={{ 
-                    padding: '1rem 2rem', 
-                    fontSize: '1.1rem',
-                    fontWeight: 600
-                  }}
-                >
-                  {!pyodide ? 'Loading Python...' : analyzing[currentAttempt?.id] ? 'Analyzing...' : '📊 Analyze Attempt'}
-                </button>
-              </div>
-              
-              {/* 2. Video Second */}
               {currentAttempt.videoData && (
                 <div className="attempt-video-player">
                   <h3>Recording</h3>
                   <video
-                    id="attempt-video-player"
                     controls
                     src={currentAttempt.videoData}
                     className="attempt-video"
+                    id="attempt-video-player"
                   >
                     Your browser does not support video playback.
                   </video>
@@ -1455,15 +1289,6 @@ function App() {
               )}
               
               {/* Interactive Transcription with Hover Timestamps */}
-              {(() => {
-                console.log('🔍 Checking transcription segments:', {
-                  hasCurrentAttempt: !!currentAttempt,
-                  hasTranscriptionSegments: !!currentAttempt?.transcriptionSegments,
-                  segmentsLength: currentAttempt?.transcriptionSegments?.length,
-                  segments: currentAttempt?.transcriptionSegments
-                })
-                return null
-              })()}
               {currentAttempt.transcriptionSegments && currentAttempt.transcriptionSegments.length > 0 && (
                 <div className="transcription-box">
                   <h3>📝 Full Transcription</h3>
@@ -1511,17 +1336,6 @@ function App() {
                 </div>
               )}
               
-              {/* 3. Analysis Results Third */}
-              {currentAttempt.analysisResults && (
-                <div className="attempt-feedback-box">
-                  <h3>Analysis Results</h3>
-                  <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>
-                    {currentAttempt.analysisResults}
-                  </pre>
-                </div>
-              )}
-              
-              {/* 4. Navigation Feedback Last */}
               {currentAttempt.navigationEvents && currentAttempt.navigationEvents.length > 0 && (
                 <div className="navigation-tracking-box">
                   <h3>📄 Page Navigation Timeline</h3>
