@@ -2,7 +2,7 @@ import os
 import json
 from pathlib import Path
 from dotenv import load_dotenv
-import google.generativeai as genai
+from google import genai
 
 # Load environment variables
 load_dotenv()
@@ -11,7 +11,7 @@ api_key = os.getenv('GOOGLE_API_KEY')
 if not api_key:
     raise ValueError("GOOGLE_API_KEY not found in .env file")
 
-genai.configure(api_key=api_key)
+client = genai.Client(api_key=api_key)
 
 # System prompt for consistent AI behavior
 SYSTEM_PROMPT = """You are an experienced presentation teacher. Your role is to provide clear, actionable feedback to help students improve their presentation skills. Focus on what was done well and what needs improvement. Be specific, encouraging, and constructive."""
@@ -123,10 +123,10 @@ IMPROVEMENT & PRESERVATION:
 - Preserve: [what they did well]"""
 
     # Generate feedback with token limit
-    model = genai.GenerativeModel('gemini-2.5-flash')
-    response = model.generate_content(
-        prompt,
-        generation_config=genai.types.GenerationConfig(
+    response = client.models.generate_content(
+        model='gemini-2.0-flash-exp',
+        contents=prompt,
+        config=genai.types.GenerateContentConfig(
             max_output_tokens=20000
         )
     )
@@ -182,8 +182,10 @@ Focus on:
 Format: One sentence per point, no explanations."""
 
     # Generate feedback
-    model = genai.GenerativeModel('gemini-2.5-flash')
-    response = model.generate_content(prompt)
+    response = client.models.generate_content(
+        model='gemini-2.0-flash-exp',
+        contents=prompt
+    )
     
     return response.text
 
