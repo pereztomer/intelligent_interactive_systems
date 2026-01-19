@@ -22,4 +22,4 @@ Allowing the user to provide feedback about the AI feedback:
 2. was it helpful?
 3, 4, 5 : generate more short questions.
 
-All answers are in scale from 1-7.
+All answers are in scale from 1-5.

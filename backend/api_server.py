@@ -389,6 +389,72 @@ def save_recording():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/save_feedback', methods=['POST'])
+def save_feedback():
+    """
+    Save user feedback about AI feedback to file system
+    
+    Expected JSON:
+    {
+        "sessionName": "My Presentation",
+        "sessionId": 123,
+        "attemptNumber": 1,
+        "feedback": {
+            "relevance": "4",
+            "helpfulness": "5",
+            "clarity": "4",
+            "actionability": "3",
+            "recommendation": "5"
+        }
+    }
+    
+    Returns confirmation of save
+    """
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        # Extract required fields
+        session_name = data.get('sessionName', 'Unnamed Session')
+        session_id = data.get('sessionId')
+        attempt_number = data.get('attemptNumber', 1)
+        feedback = data.get('feedback', {})
+        
+        if not feedback:
+            return jsonify({'error': 'No feedback data provided'}), 400
+        
+        # Create directory path: sessions/session_name/attempt_X/
+        safe_session_name = sanitize_filename(session_name)
+        session_dir = SESSIONS_DIR / f"{safe_session_name}_{session_id}"
+        attempt_dir = session_dir / f"attempt_{attempt_number}"
+        
+        if not attempt_dir.exists():
+            return jsonify({'error': f'Attempt directory not found: {attempt_dir}'}), 404
+        
+        print(f"\n💾 Saving user feedback to: {attempt_dir}")
+        
+        # Save feedback as JSON
+        feedback_path = attempt_dir / 'user_feedback.json'
+        with open(feedback_path, 'w', encoding='utf-8') as f:
+            json.dump(feedback, f, indent=2, ensure_ascii=False)
+        
+        print(f"✅ User feedback saved: {feedback_path}")
+        
+        return jsonify({
+            'success': True,
+            'feedbackPath': str(feedback_path),
+            'message': 'Feedback saved successfully'
+        })
+        
+    except Exception as e:
+        print(f"❌ Error saving feedback: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
 if __name__ == '__main__':
     print("\n" + "="*80)
     print("PRESENTATION ANALYSIS SERVER")
@@ -399,6 +465,7 @@ if __name__ == '__main__':
     print("  GET  /health         - Health check")
     print("  POST /analyze        - Analyze audio")
     print("  POST /save_recording - Save recording data to file system")
+    print("  POST /save_feedback  - Save user feedback about AI feedback")
     print("  POST /session_feedback - Generate session-level AI feedback")
     print("\n" + "="*80)
     

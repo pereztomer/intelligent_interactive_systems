@@ -24,6 +24,14 @@ function App() {
   const [currentSession, setCurrentSession] = useState(null)
   const [currentAttempt, setCurrentAttempt] = useState(null)
   const [showSurvey, setShowSurvey] = useState(false)
+  const [showRatingForm, setShowRatingForm] = useState(false)
+  const [ratingData, setRatingData] = useState({
+    relevance: '',
+    helpfulness: '',
+    clarity: '',
+    actionability: '',
+    recommendation: ''
+  })
   
   // PDF viewer state
   const [file, setFile] = useState(null)
@@ -444,6 +452,49 @@ function App() {
   // Handle survey cancel
   const handleSurveyCancel = () => {
     setShowSurvey(false)
+  }
+
+  // Handle rating form submission
+  const handleRatingSubmit = async (e) => {
+    e.preventDefault()
+    
+    try {
+      // Send rating data to backend
+      const response = await fetch('http://localhost:5000/save_feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sessionName: currentSession.name,
+          sessionId: currentSession.id,
+          attemptNumber: currentSession.attempts.findIndex(a => a.id === currentAttempt.id) + 1,
+          feedback: ratingData
+        })
+      })
+      
+      if (response.ok) {
+        alert('Thank you for your feedback!')
+        setShowRatingForm(false)
+        setRatingData({
+          relevance: '',
+          helpfulness: '',
+          clarity: '',
+          actionability: '',
+          recommendation: ''
+        })
+      } else {
+        alert('Failed to save feedback. Please try again.')
+      }
+    } catch (err) {
+      console.error('Error saving feedback:', err)
+      alert('Error saving feedback. Make sure the backend server is running.')
+    }
+  }
+
+  // Handle rating change
+  const handleRatingChange = (field, value) => {
+    setRatingData(prev => ({ ...prev, [field]: value }))
   }
 
   // Handle continue existing session
@@ -1273,6 +1324,162 @@ function App() {
     
     return (
       <div className="App">
+        {/* Rating Form Modal */}
+        {showRatingForm && (
+          <div className="survey-overlay" onClick={() => setShowRatingForm(false)}>
+            <div className="survey-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+              <div className="survey-header">
+                <h2>Rate AI Feedback</h2>
+                <p className="survey-subtitle">Please rate the AI feedback you received</p>
+                <button 
+                  onClick={() => setShowRatingForm(false)}
+                  style={{
+                    position: 'absolute',
+                    top: '20px',
+                    right: '20px',
+                    background: 'none',
+                    border: 'none',
+                    fontSize: '24px',
+                    cursor: 'pointer',
+                    color: '#666'
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+              <form className="survey-form" onSubmit={handleRatingSubmit}>
+                {/* Question 1: Relevance */}
+                <div className="survey-field">
+                  <label>1. Was it relevant?</label>
+                  <div className="scale-container">
+                    <span className="scale-label-left">1 - Not at all</span>
+                    <div className="scale-options">
+                      {[1, 2, 3, 4, 5].map(value => (
+                        <label key={value} className="scale-option">
+                          <input
+                            type="radio"
+                            name="relevance"
+                            value={value}
+                            checked={ratingData.relevance === String(value)}
+                            onChange={(e) => handleRatingChange('relevance', e.target.value)}
+                            required
+                          />
+                          <span className="scale-number">{value}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <span className="scale-label-right">5 - Very relevant</span>
+                  </div>
+                </div>
+
+                {/* Question 2: Helpfulness */}
+                <div className="survey-field">
+                  <label>2. Was it helpful?</label>
+                  <div className="scale-container">
+                    <span className="scale-label-left">1 - Not at all</span>
+                    <div className="scale-options">
+                      {[1, 2, 3, 4, 5].map(value => (
+                        <label key={value} className="scale-option">
+                          <input
+                            type="radio"
+                            name="helpfulness"
+                            value={value}
+                            checked={ratingData.helpfulness === String(value)}
+                            onChange={(e) => handleRatingChange('helpfulness', e.target.value)}
+                            required
+                          />
+                          <span className="scale-number">{value}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <span className="scale-label-right">5 - Very helpful</span>
+                  </div>
+                </div>
+
+                {/* Question 3: Clarity */}
+                <div className="survey-field">
+                  <label>3. Was it clear and easy to understand?</label>
+                  <div className="scale-container">
+                    <span className="scale-label-left">1 - Not clear</span>
+                    <div className="scale-options">
+                      {[1, 2, 3, 4, 5].map(value => (
+                        <label key={value} className="scale-option">
+                          <input
+                            type="radio"
+                            name="clarity"
+                            value={value}
+                            checked={ratingData.clarity === String(value)}
+                            onChange={(e) => handleRatingChange('clarity', e.target.value)}
+                            required
+                          />
+                          <span className="scale-number">{value}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <span className="scale-label-right">5 - Very clear</span>
+                  </div>
+                </div>
+
+                {/* Question 4: Actionability */}
+                <div className="survey-field">
+                  <label>4. Was it actionable and practical?</label>
+                  <div className="scale-container">
+                    <span className="scale-label-left">1 - Not actionable</span>
+                    <div className="scale-options">
+                      {[1, 2, 3, 4, 5].map(value => (
+                        <label key={value} className="scale-option">
+                          <input
+                            type="radio"
+                            name="actionability"
+                            value={value}
+                            checked={ratingData.actionability === String(value)}
+                            onChange={(e) => handleRatingChange('actionability', e.target.value)}
+                            required
+                          />
+                          <span className="scale-number">{value}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <span className="scale-label-right">5 - Very actionable</span>
+                  </div>
+                </div>
+
+                {/* Question 5: Recommendation */}
+                <div className="survey-field">
+                  <label>5. Would you recommend this feedback tool?</label>
+                  <div className="scale-container">
+                    <span className="scale-label-left">1 - No</span>
+                    <div className="scale-options">
+                      {[1, 2, 3, 4, 5].map(value => (
+                        <label key={value} className="scale-option">
+                          <input
+                            type="radio"
+                            name="recommendation"
+                            value={value}
+                            checked={ratingData.recommendation === String(value)}
+                            onChange={(e) => handleRatingChange('recommendation', e.target.value)}
+                            required
+                          />
+                          <span className="scale-number">{value}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <span className="scale-label-right">5 - Definitely</span>
+                  </div>
+                </div>
+
+                <div className="survey-buttons">
+                  <button type="button" onClick={() => setShowRatingForm(false)} className="btn-cancel">
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn-submit">
+                    Submit Rating
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
         <div className="presentation-viewer">
           {/* Header bar with session name, attempt number, and back button */}
           {(currentSession || currentAttempt) && (
@@ -1426,7 +1633,28 @@ function App() {
               {/* 1. Gemini Feedback First */}
               {currentAttempt.geminiFeedback && (
                 <div className="attempt-feedback-box">
-                  <h3>🤖 AI Presentation Coach Feedback</h3>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                    <h3 style={{ margin: 0 }}>🤖 AI Presentation Coach Feedback</h3>
+                    <button 
+                      className="rate-feedback-button"
+                      onClick={() => setShowRatingForm(true)}
+                      style={{
+                        padding: '8px 16px',
+                        backgroundColor: '#007bff',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        transition: 'background-color 0.3s'
+                      }}
+                      onMouseEnter={(e) => e.target.style.backgroundColor = '#0056b3'}
+                      onMouseLeave={(e) => e.target.style.backgroundColor = '#007bff'}
+                    >
+                      Rate me 😊
+                    </button>
+                  </div>
                   <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>
                     {currentAttempt.geminiFeedback}
                   </pre>
