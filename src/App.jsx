@@ -3,6 +3,7 @@ import { Document, Page, pdfjs } from 'react-pdf'
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css'
 import 'react-pdf/dist/esm/Page/TextLayer.css'
 import './App.css'
+import SurveyModal from './components/SurveyModal'
 import { 
   createSession, 
   getAllSessions, 
@@ -22,6 +23,7 @@ function App() {
   const [sessions, setSessions] = useState([])
   const [currentSession, setCurrentSession] = useState(null)
   const [currentAttempt, setCurrentAttempt] = useState(null)
+  const [showSurvey, setShowSurvey] = useState(false)
   
   // PDF viewer state
   const [file, setFile] = useState(null)
@@ -321,7 +323,8 @@ function App() {
                   videoData: base64data,
                   pdfData: pdfData,
                   fileName: fileName,
-                  navigationEvents: navigationEventsRef.current
+                  navigationEvents: navigationEventsRef.current,
+                  surveyData: currentSession.surveyData || null
                 })
               })
               
@@ -419,15 +422,28 @@ function App() {
 
   // Handle new session creation
   const handleNewSession = async () => {
+    setShowSurvey(true)
+  }
+
+  // Handle survey submission
+  const handleSurveySubmit = async (surveyData) => {
     try {
       const sessionName = prompt('Enter a name for your session (or leave blank for default):')
-      const session = await createSession(sessionName || null)
+      // Don't cancel if user presses cancel on prompt - just use default name
+      const session = await createSession(sessionName || null, surveyData)
       await loadSession(session.id)
+      setShowSurvey(false)
       setCurrentView('session')
     } catch (err) {
       console.error('Error creating session:', err)
-      alert('Failed to create session')
+      alert('Failed to create session: ' + err.message)
+      setShowSurvey(false)
     }
+  }
+
+  // Handle survey cancel
+  const handleSurveyCancel = () => {
+    setShowSurvey(false)
   }
 
   // Handle continue existing session
@@ -913,6 +929,11 @@ function App() {
   if (currentView === 'landing') {
     return (
       <div className="App">
+        <SurveyModal 
+          isOpen={showSurvey} 
+          onClose={handleSurveyCancel}
+          onSubmit={handleSurveySubmit}
+        />
         <div className="landing-page">
           <h1 className="app-title">Presentation Rehearsal Coach</h1>
           
@@ -1540,6 +1561,11 @@ function App() {
 
   return (
     <div className="App">
+      <SurveyModal 
+        isOpen={showSurvey} 
+        onClose={handleSurveyCancel}
+        onSubmit={handleSurveySubmit}
+      />
       <div className="loading">Loading...</div>
     </div>
   )

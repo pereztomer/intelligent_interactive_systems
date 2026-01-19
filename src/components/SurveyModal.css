@@ -1,0 +1,291 @@
+.survey-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.survey-modal {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.survey-header {
+  margin-bottom: 30px;
+  border-bottom: 2px solid #007bff;
+  padding-bottom: 15px;
+}
+
+.survey-header h2 {
+  color: #333;
+  margin: 0 0 10px 0;
+  font-size: 24px;
+}
+
+.survey-subtitle {
+  color: #666;
+  margin: 0;
+  font-size: 14px;
+}
+
+.survey-form {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.survey-field {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.survey-field > label {
+  font-weight: 700;
+  color: #222;
+  font-size: 16px;
+}
+
+.survey-field select {
+  padding: 10px 12px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: white;
+  cursor: pointer;
+  transition: border-color 0.3s;
+}
+
+.survey-field select:hover {
+  border-color: #007bff;
+}
+
+.survey-field select:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-weight: normal;
+}
+
+.radio-option:hover {
+  border-color: #007bff;
+  background-color: #f8f9fa;
+}
+
+.radio-option input[type="radio"] {
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
+
+.radio-option input[type="radio"]:checked + span,
+.radio-option:has(input[type="radio"]:checked) {
+  border-color: #007bff;
+  background-color: #e7f3ff;
+}
+
+/* Horizontal Scale Styling */
+.scale-container {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-top: 10px;
+}
+
+.scale-label-left,
+.scale-label-right {
+  font-size: 0.9rem;
+  color: #555;
+  font-weight: 500;
+  width: 110px;
+  flex-shrink: 0;
+}
+
+.scale-label-left {
+  text-align: right;
+}
+
+.scale-label-right {
+  text-align: left;
+}
+
+.scale-options {
+  display: flex;
+  gap: 8px;
+  flex: 0 0 auto;
+  justify-content: center;
+}
+
+.scale-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+}
+
+.scale-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.scale-number {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #ddd;
+  border-radius: 50%;
+  font-weight: 600;
+  font-size: 1rem;
+  color: #666;
+  transition: all 0.3s;
+  background-color: white;
+}
+
+.scale-option:hover .scale-number {
+  border-color: #007bff;
+  background-color: #f8f9fa;
+}
+
+.scale-option input[type="radio"]:checked + .scale-number {
+  border-color: #007bff;
+  background-color: #007bff;
+  color: white;
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+}
+
+.survey-buttons {
+  display: flex;
+  gap: 15px;
+  justify-content: flex-end;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 2px solid #eee;
+}
+
+.survey-buttons button {
+  padding: 12px 30px;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-cancel {
+  background-color: #6c757d;
+  color: white;
+}
+
+.btn-cancel:hover {
+  background-color: #5a6268;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.btn-submit {
+  background-color: #007bff;
+  color: white;
+}
+
+.btn-submit:hover {
+  background-color: #0056b3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+}
+
+/* Scrollbar styling for the modal */
+.survey-modal::-webkit-scrollbar {
+  width: 8px;
+}
+
+.survey-modal::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.survey-modal::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.survey-modal::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .survey-modal {
+    padding: 20px;
+    max-width: 95%;
+  }
+
+  .survey-header h2 {
+    font-size: 20px;
+  }
+
+  .survey-buttons {
+    flex-direction: column;
+  }
+
+  .survey-buttons button {
+    width: 100%;
+  }
+
+  .scale-container {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .scale-label-left,
+  .scale-label-right {
+    font-size: 0.85rem;
+  }
+
+  .scale-options {
+    gap: 5px;
+  }
+
+  .scale-number {
+    width: 35px;
+    height: 35px;
+    font-size: 0.9rem;
+  }
+}

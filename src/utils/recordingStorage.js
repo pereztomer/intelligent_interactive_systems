@@ -42,7 +42,7 @@ const initDB = () => {
 // ========== SESSION FUNCTIONS ==========
 
 // Create a new session
-export const createSession = async (sessionName) => {
+export const createSession = async (sessionName, surveyData = null) => {
   const db = await initDB()
   const transaction = db.transaction([SESSIONS_STORE], 'readwrite')
   const store = transaction.objectStore(SESSIONS_STORE)
@@ -50,7 +50,8 @@ export const createSession = async (sessionName) => {
   const session = {
     name: sessionName || `Session ${new Date().toLocaleDateString()}`,
     createdAt: Date.now(),
-    processFeedback: null
+    processFeedback: null,
+    surveyData: surveyData
   }
 
   return new Promise((resolve, reject) => {

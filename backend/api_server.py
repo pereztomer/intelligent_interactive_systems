@@ -262,7 +262,7 @@ def sanitize_filename(name):
 @app.route('/save_recording', methods=['POST'])
 def save_recording():
     """
-    Save recording data (audio + video + PDF + navigation) to file system
+    Save recording data (audio + video + PDF + navigation + survey) to file system
     
     Expected JSON:
     {
@@ -273,7 +273,8 @@ def save_recording():
         "videoData": "base64_encoded_video" (optional),
         "pdfData": "base64_encoded_pdf" (optional),
         "fileName": "presentation.pdf" (optional),
-        "navigationEvents": [...]
+        "navigationEvents": [...],
+        "surveyData": {...} (optional)
     }
     
     Returns paths to saved files
@@ -293,6 +294,7 @@ def save_recording():
         pdf_base64 = data.get('pdfData')
         pdf_file_name = data.get('fileName', 'presentation.pdf')
         navigation_events = data.get('navigationEvents', [])
+        survey_data = data.get('surveyData')
         
         if not audio_base64:
             return jsonify({'error': 'No audio data provided'}), 400
@@ -304,6 +306,13 @@ def save_recording():
         attempt_dir.mkdir(parents=True, exist_ok=True)
         
         print(f"\n💾 Saving recording to: {attempt_dir}")
+        
+        # Save survey data to session directory (not attempt directory)
+        if survey_data and attempt_number == 1:  # Only save once per session
+            survey_path = session_dir / 'user_survey.json'
+            with open(survey_path, 'w', encoding='utf-8') as f:
+                json.dump(survey_data, f, indent=2, ensure_ascii=False)
+            print(f"✅ Survey data saved: {survey_path}")
         
         # Save audio file
         audio_path = attempt_dir / 'audio.wav'
