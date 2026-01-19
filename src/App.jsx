@@ -672,43 +672,56 @@ function App() {
     const speakingPct = result.pacing?.speakingPercentage || result.pacing_metrics?.speaking_percentage || 0
     const uniqueFillers = [...new Set(allFillers)]
 
+    // Normalize values to percentages (0-100)
+    // WPM: typical range 0-200, optimal around 120-140
+    const normalizedWpm = Math.min(100, (avgWpm / 200) * 100)
+    
+    // Pitch Range: typical range 0-400 Hz
+    const normalizedPitchRange = Math.min(100, (avgPitchRange / 400) * 100)
+    
+    // Energy Variance: typical range 0-0.015
+    const normalizedEnergyVar = Math.min(100, (avgEnergyVar / 0.015) * 100)
+    
+    // Speaking Percentage: already 0-100
+    const normalizedSpeakingPct = speakingPct
+
     // Build profile with separate metrics
     const profile = {}
 
     // 1. Pacing Analysis
     if (avgWpm < 110) {
-      profile.pacing = "The speaker maintains a slow, deliberate pace."
+      profile.pacing = `The speaker maintains a slow, deliberate pace. **${normalizedWpm.toFixed(1)}%**`
     } else if (avgWpm <= 140) {
-      profile.pacing = "The speaker communicates at an ideal conversational rate."
+      profile.pacing = `The speaker communicates at an ideal conversational rate. **${normalizedWpm.toFixed(1)}%**`
     } else {
-      profile.pacing = "The delivery is rapid, suggesting high urgency."
+      profile.pacing = `The delivery is rapid, suggesting high urgency. **${normalizedWpm.toFixed(1)}%**`
     }
 
     // 2. Fluency Analysis
     if (speakingPct < 55) {
-      profile.fluency = "The speech is highly fragmented with long silences."
+      profile.fluency = `The speech is highly fragmented with long silences. **${normalizedSpeakingPct.toFixed(1)}%**`
     } else if (speakingPct <= 75) {
-      profile.fluency = "The flow is natural with balanced pauses."
+      profile.fluency = `The flow is natural with balanced pauses. **${normalizedSpeakingPct.toFixed(1)}%**`
     } else {
-      profile.fluency = "The speaker is exceptionally fluent with minimal interruptions."
+      profile.fluency = `The speaker is exceptionally fluent with minimal interruptions. **${normalizedSpeakingPct.toFixed(1)}%**`
     }
 
     // 3. Expressiveness Analysis
     if (avgPitchRange < 150) {
-      profile.expressiveness = "The vocal tone is relatively monotone."
+      profile.expressiveness = `The vocal tone is relatively monotone. **${normalizedPitchRange.toFixed(1)}%**`
     } else if (avgPitchRange <= 250) {
-      profile.expressiveness = "The voice shows healthy modulation."
+      profile.expressiveness = `The voice shows healthy modulation. **${normalizedPitchRange.toFixed(1)}%**`
     } else {
-      profile.expressiveness = "The speaker is highly dynamic, using a wide pitch range to emphasize points."
+      profile.expressiveness = `The speaker is highly dynamic, using a wide pitch range to emphasize points. **${normalizedPitchRange.toFixed(1)}%**`
     }
 
     // 4. Stability Analysis
     if (avgEnergyVar < 0.002) {
-      profile.stability = "The speaker exhibits exceptional vocal control, maintaining a very steady and professional volume throughout the delivery."
+      profile.stability = `The speaker exhibits exceptional vocal control, maintaining a very steady and professional volume. **${normalizedEnergyVar.toFixed(1)}%**`
     } else if (avgEnergyVar <= 0.007) {
-      profile.stability = "Volume levels are mostly consistent, with natural energy shifts that help maintain listener interest without being erratic."
+      profile.stability = `Volume levels are mostly consistent, with natural energy shifts that help maintain listener interest. **${normalizedEnergyVar.toFixed(1)}%**`
     } else {
-      profile.stability = "There are significant fluctuations in vocal energy, which may suggest inconsistent breath control or very intense emotional emphasis."
+      profile.stability = `There are significant fluctuations in vocal energy, which may suggest inconsistent breath control or very intense emotional emphasis. **${normalizedEnergyVar.toFixed(1)}%**`
     }
 
     // 5. Filler Words
