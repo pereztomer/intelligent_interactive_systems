@@ -93,26 +93,27 @@ Total presentation duration: {analysis_data.get('duration', 0):.1f}s
 Analyze the presentation and provide feedback in EXACTLY 3 sections:
 
 1. CONTENT ANALYSIS:
-   - Compare what the user said (transcription) with what's written on the slides (PDF content)
-   - Did they explain the slides in a logical, coherent way?
+   - Compare what the user said (transcription) with what's written on the slides (PDF content) to see if 
+   they explain the slides in a logical, coherent way?
 
 2. TIMING ANALYSIS:
    - How did they divide time across slides, was it too fast or too long?
 
 3. IMPROVEMENT & PRESERVATION:
-   - What should they improve? (2 specific points)
-   - What should they preserve/keep doing well? (2 specific point)
+   - What should they improve?
+   - What should they preserve/keep doing well?
 
 Format:
 CONTENT:
-[3 bullet points analyzing content quality]
+[1-2 bullet points analyzing content quality]
 
 TIMING:
-[2 bullet points analyzing time management]
+[1-2 bullet points analyzing time management]
 
 IMPROVEMENT & PRESERVATION:
 [4 bullet points (2 improvement, 2 preservation)]
 
+Pay attention, your answers needs to be in a short format, unless there is a really good reason to be a little bit longer.
 """
     # Generate feedback with token limit
     response = client.models.generate_content(

@@ -1120,36 +1120,3 @@
   font-style: italic;
   font-size: 0.9rem;
 }
-
-/* Transcription styles */
-.transcription-box {
-  background: var(--bg-card, rgba(255, 255, 255, 0.95));
-  padding: 1.5rem;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  margin-top: 2rem;
-}
-
-.transcription-box h3 {
-  margin-bottom: 1rem;
-  color: var(--navy-primary, #1e3a5f);
-  font-size: 1.3rem;
-}
-
-.transcription-content {
-  line-height: 2;
-  color: #2d3748;
-  font-size: 1.1rem;
-}
-
-.transcription-segment {
-  display: inline;
-  margin-right: 0.3rem;
-}
-
-.transcription-word {
-  display: inline-block;
-  margin: 0 2px;
-  user-select: text;
-  position: relative;
-}

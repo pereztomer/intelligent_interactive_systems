@@ -14,6 +14,15 @@ import {
   updateAttempt,
   deleteAttempt
 } from './utils/recordingStorage'
+import {
+  checkBackendAvailable,
+  saveRecording as saveRecordingToBackend,
+  analyzeAttempt as analyzeAttemptAPI,
+  generateAIFeedback as generateAIFeedbackAPI,
+  generateSessionFeedback as generateSessionFeedbackAPI,
+  saveFeedback as saveFeedbackAPI
+} from './utils/apiClient'
+import { extractAudioFromVideo } from './utils/audioProcessing'
 
 // Set up PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`
@@ -318,41 +327,29 @@ function App() {
             console.log(`Session attempt number: ${sessionAttemptNumber}`)
             
             try {
-              const response = await fetch('http://localhost:5000/save_recording', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  sessionName: currentSession.name,
-                  sessionId: currentSession.id,
-                  attemptNumber: sessionAttemptNumber,
-                  audioData: audioData,
-                  videoData: base64data,
-                  pdfData: pdfData,
-                  fileName: fileName,
-                  navigationEvents: navigationEventsRef.current,
-                  surveyData: currentSession.surveyData || null
-                })
+              const result = await saveRecordingToBackend({
+                sessionName: currentSession.name,
+                sessionId: currentSession.id,
+                attemptNumber: sessionAttemptNumber,
+                audioData: audioData,
+                videoData: base64data,
+                pdfData: pdfData,
+                fileName: fileName,
+                navigationEvents: navigationEventsRef.current,
+                surveyData: currentSession.surveyData || null
               })
               
-              if (response.ok) {
-                const result = await response.json()
-                console.log('✅ Files saved to:', result.attemptDir)
-                
-                // Update attempt with file paths
-                await updateAttempt(attempt.id, { 
-                  audioPath: result.audioPath,
-                  videoPath: result.videoPath,
-                  pdfPath: result.pdfPath,
-                  navigationPath: result.navigationPath 
-                })
-                
-                alert(`Recording saved successfully!\n\nFiles saved to: ${result.attemptDir}`)
-              } else {
-                console.error('Backend save failed')
-                alert('Recording saved to browser, but file system save failed. Check if backend is running.')
-              }
+              console.log('✅ Files saved to:', result.attemptDir)
+              
+              // Update attempt with file paths
+              await updateAttempt(attempt.id, { 
+                audioPath: result.audioPath,
+                videoPath: result.videoPath,
+                pdfPath: result.pdfPath,
+                navigationPath: result.navigationPath 
+              })
+              
+              alert(`Recording saved successfully!\n\nFiles saved to: ${result.attemptDir}`)
             } catch (backendErr) {
               console.error('Backend not available:', backendErr)
               alert('Recording saved to browser, but backend is not running.\nAudio and navigation files were NOT saved to disk.')
@@ -459,33 +456,22 @@ function App() {
     e.preventDefault()
     
     try {
-      // Send rating data to backend
-      const response = await fetch('http://localhost:5000/save_feedback', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          sessionName: currentSession.name,
-          sessionId: currentSession.id,
-          attemptNumber: currentSession.attempts.findIndex(a => a.id === currentAttempt.id) + 1,
-          feedback: ratingData
-        })
-      })
+      await saveFeedbackAPI(
+        currentSession.name,
+        currentSession.id,
+        currentSession.attempts.findIndex(a => a.id === currentAttempt.id) + 1,
+        ratingData
+      )
       
-      if (response.ok) {
-        alert('Thank you for your feedback!')
-        setShowRatingForm(false)
-        setRatingData({
-          relevance: '',
-          helpfulness: '',
-          clarity: '',
-          actionability: '',
-          recommendation: ''
-        })
-      } else {
-        alert('Failed to save feedback. Please try again.')
-      }
+      alert('Thank you for your feedback!')
+      setShowRatingForm(false)
+      setRatingData({
+        relevance: '',
+        helpfulness: '',
+        clarity: '',
+        actionability: '',
+        recommendation: ''
+      })
     } catch (err) {
       console.error('Error saving feedback:', err)
       alert('Error saving feedback. Make sure the backend server is running.')
@@ -544,102 +530,8 @@ function App() {
     setCurrentView('attempt')
   }
 
-  // Helper functions for backend analysis
-  const checkBackendAvailable = async () => {
-    try {
-      const response = await fetch('http://localhost:5000/health', {
-        method: 'GET',
-        signal: AbortSignal.timeout(2000) // 2 second timeout
-      })
-      return response.ok
-    } catch (err) {
-      return false
-    }
-  }
+  // Helper functions for backend analysis (now using apiClient)
 
-  const extractAudioFromVideo = async (videoBase64) => {
-    try {
-      // Convert base64 video to blob
-      const response = await fetch(videoBase64)
-      const videoBlob = await response.blob()
-      
-      // Create audio context
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)()
-      
-      // Decode video to get audio
-      const arrayBuffer = await videoBlob.arrayBuffer()
-      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
-      
-      // Convert to WAV format
-      const wavBlob = audioBufferToWav(audioBuffer)
-      
-      // Convert to base64
-      return new Promise((resolve) => {
-        const reader = new FileReader()
-        reader.onloadend = () => resolve(reader.result)
-        reader.readAsDataURL(wavBlob)
-      })
-    } catch (err) {
-      console.error('Audio extraction error:', err)
-      return null
-    }
-  }
-
-  const audioBufferToWav = (audioBuffer) => {
-    const numChannels = 1 // Mono
-    const sampleRate = 16000 // 16kHz for speech
-    const format = 1 // PCM
-    const bitDepth = 16
-    
-    // Resample to 16kHz mono
-    const length = Math.ceil(audioBuffer.duration * sampleRate)
-    const result = new Float32Array(length)
-    const originalSampleRate = audioBuffer.sampleRate
-    
-    for (let i = 0; i < length; i++) {
-      const originalIndex = Math.floor(i * originalSampleRate / sampleRate)
-      let sum = 0
-      for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
-        sum += audioBuffer.getChannelData(channel)[originalIndex] || 0
-      }
-      result[i] = sum / audioBuffer.numberOfChannels
-    }
-    
-    // Create WAV file
-    const buffer = new ArrayBuffer(44 + result.length * 2)
-    const view = new DataView(buffer)
-    
-    // WAV header
-    const writeString = (offset, string) => {
-      for (let i = 0; i < string.length; i++) {
-        view.setUint8(offset + i, string.charCodeAt(i))
-      }
-    }
-    
-    writeString(0, 'RIFF')
-    view.setUint32(4, 36 + result.length * 2, true)
-    writeString(8, 'WAVE')
-    writeString(12, 'fmt ')
-    view.setUint32(16, 16, true)
-    view.setUint16(20, format, true)
-    view.setUint16(22, numChannels, true)
-    view.setUint32(24, sampleRate, true)
-    view.setUint32(28, sampleRate * numChannels * bitDepth / 8, true)
-    view.setUint16(32, numChannels * bitDepth / 8, true)
-    view.setUint16(34, bitDepth, true)
-    writeString(36, 'data')
-    view.setUint32(40, result.length * 2, true)
-    
-    // Write audio data
-    let offset = 44
-    for (let i = 0; i < result.length; i++) {
-      const sample = Math.max(-1, Math.min(1, result[i]))
-      view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true)
-      offset += 2
-    }
-    
-    return new Blob([buffer], { type: 'audio/wav' })
-  }
 
   const generateSpeakerProfile = (result) => {
     // Initialize variables
@@ -846,22 +738,7 @@ function App() {
         console.log('📁 Using audio file:', attempt.audioPath)
         
         // Send audio file path to backend
-        const response = await fetch('http://localhost:5000/analyze', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            audioPath: attempt.audioPath,
-            enableTranscription: true
-          })
-        })
-        
-        if (!response.ok) {
-          throw new Error('Backend analysis failed: ' + response.statusText)
-        }
-        
-        const result = await response.json()
+        const result = await analyzeAttemptAPI(attempt.audioPath)
         
         // Debug logging
         console.log('📊 Analysis result:', result)
@@ -945,21 +822,7 @@ function App() {
       console.log('🤖 Generating AI feedback only...')
       
       // Call Gemini feedback endpoint
-      const response = await fetch('http://localhost:5000/generate_feedback', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          audioPath: attempt.audioPath
-        })
-      })
-      
-      if (!response.ok) {
-        throw new Error('AI feedback generation failed: ' + response.statusText)
-      }
-      
-      const result = await response.json()
+      const result = await generateAIFeedbackAPI(attempt.audioPath)
       
       // Format and save Gemini feedback separately
       const geminiFeedback = result.feedback
@@ -1132,22 +995,7 @@ function App() {
                       }
                       
                       // Generate session feedback with Gemini
-                      const response = await fetch('http://localhost:5000/session_feedback', {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                          sessionName: currentSession.name,
-                          sessionId: currentSession.id
-                        })
-                      })
-                      
-                      if (!response.ok) {
-                        throw new Error('Session feedback generation failed')
-                      }
-                      
-                      const result = await response.json()
+                      const result = await generateSessionFeedbackAPI(currentSession.name, currentSession.id)
                       await updateSession(currentSession.id, { processFeedback: result.feedback })
                       await loadSession(currentSession.id)
                       
@@ -1176,22 +1024,7 @@ function App() {
                       }
                       
                       // Generate session feedback with Gemini
-                      const response = await fetch('http://localhost:5000/session_feedback', {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                          sessionName: currentSession.name,
-                          sessionId: currentSession.id
-                        })
-                      })
-                      
-                      if (!response.ok) {
-                        throw new Error('Session feedback generation failed')
-                      }
-                      
-                      const result = await response.json()
+                      const result = await generateSessionFeedbackAPI(currentSession.name, currentSession.id)
                       await updateSession(currentSession.id, { processFeedback: result.feedback })
                       await loadSession(currentSession.id)
                       
