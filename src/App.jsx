@@ -23,6 +23,7 @@ import {
   saveFeedback as saveFeedbackAPI
 } from './utils/apiClient'
 import { extractAudioFromVideo } from './utils/audioProcessing'
+import { generateSpeakerProfile, formatGeminiFeedback, formatAnalysisResults } from './utils/analysisFormatting'
 
 // Set up PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`
@@ -532,13 +533,18 @@ function App() {
 
   // Helper functions for backend analysis (now using apiClient)
 
+  // Analysis formatting functions moved to utils/analysisFormatting.js
 
-  const generateSpeakerProfile = (result) => {
-    // Initialize variables
-    let totalSpeechDuration = 0
-    let weightedWpmSum = 0
-    let weightedPitchRangeSum = 0
-    let weightedEnergyVarSum = 0
+  // Handle export recording
+  const handleExportRecording = (attempt) => {
+    try {
+      if (!attempt.videoData) {
+        alert('No video data found')
+        return
+      }
+
+      // Convert base64 to blob
+      const base64Data = attempt.videoData.split(',')[1]
     let allFillers = []
 
     // Process all speech segments (support both camelCase and snake_case)
@@ -825,17 +831,7 @@ function App() {
       const result = await generateAIFeedbackAPI(attempt.audioPath)
       
       // Format and save Gemini feedback separately
-      const geminiFeedback = result.feedback
-        .split(/[.!?]\s+/)
-        .filter(line => line.trim().length > 0)
-        .map(line => {
-          const trimmed = line.trim()
-          if (trimmed && !trimmed.match(/[.!?]$/)) {
-            return trimmed + '.'
-          }
-          return trimmed
-        })
-        .join('\n')
+      const geminiFeedback = formatGeminiFeedback(result)
       
       // Save Gemini feedback
       await updateAttempt(attemptId, { geminiFeedback: geminiFeedback })
