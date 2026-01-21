@@ -1,0 +1,435 @@
+# Complete List of Papers and Studies from Lectures
+
+## Papers Mentioned in Lectures
+
+### Lecture 01: IIS Intro (2025)
+
+#### Primary References
+
+1. **Amershi, S., et al. (2019)**
+   - Guidelines for Human-AI Interaction
+   - CHI 2019
+   - **Status**: HIGH PRIORITY - Core framework
+
+2. **Weisz, J. D., et al. (2024)**
+   - Updated guidelines for Human-AI Interaction
+   - **Status**: MEDIUM PRIORITY - Updates to Amershi et al.
+   - **Note**: Exact citation needed
+
+3. **Zhao, J., et al. (2025)**
+   - Recent guidelines for Human-AI Interaction
+   - **Status**: MEDIUM PRIORITY - Latest principles
+   - **Note**: Exact citation needed
+
+4. **Grosz, B. J. (2012)**
+   - "What Question Would Turing Pose Today?"
+   - **Status**: HIGH PRIORITY - Central question
+   - **URL**: https://www.youtube.com/watch?v=Plc7nKJWQ9s
+
+5. **Nass, C., & Reeves, B. (1996)**
+   - The Media Equation: How People Treat Computers, Television, and New Media Like Real People and Places
+   - **Status**: HIGH PRIORITY - Social rules applied to computers
+
+6. **Horvitz, E. (1999)**
+   - Historical reference for HAI
+   - **Status**: LOW PRIORITY - Historical context
+   - **Note**: Exact citation needed
+
+7. **Shneiderman, B. (2020)**
+   - Design principles for interactive systems
+   - **Status**: LOW PRIORITY - Additional principles
+   - **Note**: Exact citation needed
+
+8. **Turing, A. M. (1950)**
+   - Computing Machinery and Intelligence
+   - Mind, Vol. LIX, No. 236
+   - "Can machines think?"
+   - **Status**: LOW PRIORITY - Historical context
+
+---
+
+### Lecture 02: Creativity Support (2025)
+
+#### Primary References
+
+9. **Nijstad, B. A., & Stroebe, W. (2006)**
+   - How the group affects the mind: A cognitive model of idea generation in groups
+   - Personality and Social Psychology Review, 10(3), 186-213
+   - **Status**: LOW PRIORITY - Not directly applicable (creativity/group ideation vs. presentation coaching)
+
+10. **ChatGPT and Group Ideation Study**
+    - [FULL CITATION NEEDED - Not visible in lecture]
+    - Findings: ChatGPT increases quantity but reduces diversity, users feel less ownership
+    - **Status**: LOW-MEDIUM PRIORITY - Design principles only (avoid homogenization)
+    - **Note**: Need to find full citation
+
+---
+
+### Lecture 03: Human-Robot Teamwork (2025)
+
+#### Primary References
+
+11. **Marks, M. A., Sabella, M. J., Burke, C. S., & Zaccaro, S. J. (2002)**
+    - The impact of cross-training on team effectiveness
+    - Journal of Applied Psychology, 87(1), 3
+    - **Status**: HIGH PRIORITY - Shared mental models theory
+
+12. **Nikolaidis, S., & Shah, J. (2013)**
+    - Human-robot cross-training: computational formulation, modeling and evaluation of a human team training strategy
+    - Proceedings of the 8th ACM/IEEE International Conference on Human-Robot Interaction
+    - IEEE Press, 2013
+    - **Status**: LOW PRIORITY - Not directly applicable to our system
+
+13. **Zhang, B., & Soh, H. (2023)**
+    - Large language models as zero-shot human models for human-robot interaction
+    - 2023 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)
+    - IEEE, 2023
+    - **Status**: MEDIUM PRIORITY - Supports LLM use for human behavior understanding
+
+---
+
+### Lecture 04: AI-Mediated Communication (2025)
+
+#### Primary References
+
+14. **Hancock, J. T., Naaman, M., & Levy, K. (2020)**
+    - AI-Mediated Communication: Definition, Research Agenda, and Ethical Considerations
+    - Journal of Computer-Mediated Communication, 25(1), 89-100
+    - **Status**: HIGH PRIORITY - Core framework for AI-MC
+
+15. **Arnold, K. C., Chauncey, K., & Gajos, K. Z. (2020)**
+    - Predictive text encourages predictable writing
+    - Proceedings of the 25th International Conference on Intelligent User Interfaces, 128-138
+    - **Status**: MEDIUM PRIORITY - Design principles (avoid constraining behavior)
+
+16. **Jakesch, M., Hancock, J. T., & Naaman, M. (2023)**
+    - Human heuristics for AI-generated language are flawed
+    - Proceedings of the National Academy of Sciences, 120(11), e2208839120
+    - **Status**: LOW-MEDIUM PRIORITY - Perception of AI-generated content
+
+17. **Jakesch, M., Bhat, A., Buschek, D., Zalmanson, L., & Naaman, M. (2023)**
+    - Co-writing with opinionated language models affects users' views
+    - Proceedings of the 2023 CHI Conference on Human Factors in Computing Systems, 1-15
+    - **Status**: MEDIUM PRIORITY - Ethical considerations (AI influence)
+
+18. **Dash, S., Xu, Y., Jalbert, M., & Spiro, E. S. (2025)**
+    - The persuasive potential of AI-paraphrased information at scale
+    - PNAS nexus, 4(7), pgaf207
+    - **Status**: LOW PRIORITY - Not directly applicable
+
+---
+
+### Lecture 05: Human-Human Dialogue (2025)
+
+#### Primary References
+
+19. **Clark, H. H., & Brennan, S. A. (1991)**
+    - Grounding in communication
+    - In L. B. Resnick, J. M. Levine, & S. D. Teasley (Eds.), Perspectives on socially shared cognition (pp. 127-149). American Psychological Association
+    - **Status**: MEDIUM-HIGH PRIORITY - Common ground theory (user-system understanding)
+
+20. **Stasser, G., & Titus, W. (1985)**
+    - Pooling of unshared information in group decision making: Biased information sampling during discussion
+    - Journal of Personality and Social Psychology, 48(6), 1467-1478
+    - **Status**: LOW PRIORITY - Not directly applicable (group decision-making vs. individual presentation)
+
+21. **Grosz, B. J., & Sidner, C. L. (1986)**
+    - Attention, intentions, and the structure of discourse
+    - Computational Linguistics, 12(3), 175-204
+    - **Status**: LOW PRIORITY - Not directly applicable (dialogue structure vs. presentation coaching)
+
+22. **Grosz, B. J. (1974, 1975, 1977, 1979)**
+    - [Foundational work on dialogue structure - exact citations needed]
+    - **Status**: LOW PRIORITY - Historical foundational work, not directly applicable
+
+23. **Huber, B., Shieber, S., & Gajos, K. Z. (2020)**
+    - Automatically analyzing brainstorming language behavior with Meeter
+    - [Conference - exact citation needed]
+    - **Status**: LOW PRIORITY - System paper, different domain (group brainstorming)
+
+24. **Alsobay, M., Rothschild, D. M., Hofman, J. M., & Goldstein, D. G. (2024)**
+    - Bringing everyone to the table: LLM-facilitated group decision making
+    - [Conference - exact citation needed]
+    - **Status**: LOW PRIORITY - System paper, different domain (group facilitation)
+
+---
+
+### Lecture 06: Retrieving and Presenting Search Results (2025)
+
+#### Primary References
+
+25. **Shahaf, D., Guestrin, C., & Horvitz, E. (2012)**
+    - Trains of thought: Generating information maps
+    - Proceedings of the 21st international conference on World Wide Web, 899-908
+    - **Status**: MEDIUM PRIORITY - Metro Maps framework (organizing complex information into coherent narratives)
+
+26. **Shahaf, D., & Guestrin, C. (2010)**
+    - Connecting the dots between news articles
+    - Proceedings of the 16th ACM SIGKDD international conference on Knowledge discovery and data mining, 623-632
+    - **Status**: LOW-MEDIUM PRIORITY - Technical foundation for coherence measurement
+
+---
+
+### Lecture 07: Interpretable Machine Learning (2025)
+
+#### Primary References
+
+27. **Lipton, Z. C. (2016)**
+    - The mythos of model interpretability
+    - arXiv preprint arXiv:1606.03490
+    - **Status**: HIGH PRIORITY - Core framework for interpretability (trust, causality, transferability, informativeness)
+
+28. **Ribeiro, M. T., Singh, S., & Guestrin, C. (2016)**
+    - "Why should I trust you?" Explaining the predictions of any classifier
+    - Proceedings of the 22nd ACM SIGKDD international conference on knowledge discovery and data mining, 1135-1144
+    - **Status**: MEDIUM PRIORITY - LIME approach for local explanations
+
+29. **Kim, B., Wattenberg, M., Gilmer, J., Cai, C., Wexler, J., Viegas, F., & Sayres, R. (2018)**
+    - Interpretability beyond feature attribution: Quantitative testing with concept activation vectors (TCAV)
+    - International conference on machine learning, 2668-2677
+    - **Status**: MEDIUM PRIORITY - Concept-based explanations
+
+30. **Miller, T. (2017)**
+    - Explanation in artificial intelligence: Insights from the social sciences
+    - Artificial Intelligence, 267, 1-38
+    - **Status**: HIGH PRIORITY - Design principles for explanations (contrastive, simple, conversational)
+
+31. **Miller, T., Howe, P., & Sonenberg, L. (2017)**
+    - Explainable AI: Beware of Inmates Running the Asylum
+    - IJCAI-17 Workshop on Explainable AI (XAI), p. 36
+    - **Status**: MEDIUM PRIORITY - Critique of XAI approaches
+
+32. **Grice, H. P. (1975)**
+    - Logic and conversation
+    - In P. Cole & J. L. Morgan (Eds.), Syntax and semantics: Vol. 3. Speech acts (pp. 41-58). Academic Press
+    - **Status**: MEDIUM-HIGH PRIORITY - Conversational principles for explanations
+
+33. **Hilton, D. J. (1990)**
+    - Conversational processes and causal explanation
+    - Psychological Bulletin, 107(1), 65-81
+    - **Status**: LOW-MEDIUM PRIORITY - Explanations as conversations
+
+---
+
+### Lecture 08: Explainable Reinforcement Learning (2025)
+
+#### Primary References
+
+34. **Amir, D., & Amir, O. (2018)**
+    - HIGHLIGHTS: Summarizing agent behaviors to people
+    - Proceedings of the 17th International Conference on Autonomous Agents and Multiagent Systems (AAMAS 2018)
+    - **Status**: LOW-MEDIUM PRIORITY - Summarization principle (not directly applicable - RL agents vs. presentation feedback)
+
+35. **Greydanus, S., Koul, A., Dodge, J., & Fern, A. (2018)**
+    - Visualizing and understanding Atari agents
+    - International Conference on Machine Learning
+    - **Status**: LOW PRIORITY - Not directly applicable (visual RL agents)
+
+36. **Amitai, Y., Septon, Y., & Amir, O. (2024)**
+    - COViz: Counterfactual action outcomes for explainable reinforcement learning
+    - Proceedings of the AAAI Conference on Artificial Intelligence
+    - **Status**: LOW-MEDIUM PRIORITY - Counterfactual explanations (design consideration only)
+
+37. **Danesh, M. H., et al. (2021)**
+    - Re-understanding finite-state representations of recurrent policy networks
+    - International Conference on Machine Learning. PMLR
+    - **Status**: LOW PRIORITY - Technical approach for RL, not applicable
+
+38. **Booth, S., Muise, C., & Shah, J. (2019)**
+    - Evaluating the interpretability of the knowledge compilation map: Communicating logical statements effectively
+    - Proceedings of the 28th International Joint Conference on Artificial Intelligence (IJCAI)
+    - **Status**: LOW PRIORITY - Rule-based policy summarization, not applicable
+
+---
+
+### Lecture 09: Fairness in Machine Learning (2025)
+
+#### Primary References
+
+39. **Green, B., & Chen, Y. (2019)**
+    - The principles and limits of algorithm-in-the-loop decision making
+    - Proceedings of the ACM on Human-Computer Interaction, 3(CSCW), 1-24
+    - **Status**: HIGH PRIORITY - Algorithm-in-the-loop framework (reliability, fairness, user decision-making)
+
+40. **Kim, S. S. Y., et al. (2024)**
+    - "I'm Not Sure, But...": Examining the Impact of Large Language Models' Uncertainty Expression on User Reliance and Trust
+    - Proceedings of the 2024 ACM conference on fairness, accountability, and transparency
+    - **Status**: HIGH PRIORITY - Directly applicable (uncertainty expression in LLM feedback)
+
+41. **Lucy, L., et al. (2024)**
+    - "One-Size-Fits-All"? Examining Expectations around What Constitute "Fair" or "Good" NLG System Behaviors
+    - Proceedings of the 2024 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies (Volume 1: Long Papers)
+    - **Status**: MEDIUM-HIGH PRIORITY - Context-dependent fairness expectations
+
+---
+
+### Lecture 10: Ethical Challenges in Intelligent Systems (2025)
+
+#### Primary References
+
+42. **Hofmann, V., Kalluri, P. R., Jurafsky, D., & King, S. (2024)**
+    - AI generates covertly racist decisions about people based on their dialect
+    - Nature, 633(8028), 147-154
+    - **Status**: HIGH PRIORITY - Covert biases in LLMs, dialect-based discrimination (directly applicable)
+
+43. **Liang, W., Yuksekgonul, M., Mao, Y., Wu, E., & Zou, J. (2023)**
+    - GPT detectors are biased against non-native English writers
+    - Patterns, 4(7)
+    - **Status**: MEDIUM-HIGH PRIORITY - Bias against non-native speakers (relevant for speech analysis)
+
+44. **Caliskan, A., Bryson, J. J., & Narayanan, A. (2017)**
+    - Semantics derived automatically from language corpora contain human-like biases
+    - Science, 356(6334), 183-186
+    - **Status**: MEDIUM PRIORITY - Human-like biases in language models
+
+45. **Bolukbasi, T., et al. (2016)**
+    - Man is to Computer Programmer as Woman is to Homemaker? Debiasing Word Embeddings
+    - Advances in Neural Information Processing Systems (NIPS)
+    - **Status**: LOW-MEDIUM PRIORITY - Technical debiasing approach
+
+46. **Garg, N., et al. (2018)**
+    - Word embeddings quantify 100 years of gender and ethnic stereotypes
+    - Proceedings of the National Academy of Sciences, 115(16), E3635-E3644
+    - **Status**: LOW PRIORITY - Historical analysis of biases
+
+---
+
+### Lecture 11: AI Safety and Alignment (2025)
+
+#### Primary References
+
+47. **Sutton, R. (2019)**
+    - The bitter lesson
+    - [Blog post/essay]
+    - **Status**: MEDIUM PRIORITY - General methods and computation leverage
+
+48. **Yudkowsky, E. (2004)**
+    - Coherent Extrapolated Volition
+    - [Concept/essay]
+    - **Status**: LOW-MEDIUM PRIORITY - Alignment principle (abstract)
+
+49. **Anthropic (2024)**
+    - Character training for AI systems
+    - [Company blog/research]
+    - **Status**: LOW-MEDIUM PRIORITY - Personality/character alignment
+
+50. **OpenAI Model Spec**
+    - Model specification for aligned AI behavior
+    - [Specification document]
+    - **Status**: LOW-MEDIUM PRIORITY - Rule-based alignment approach
+
+---
+
+## Summary by Priority
+
+### 🔴 HIGH PRIORITY (Must Download)
+
+1. **Amershi, S., et al. (2019)**. Guidelines for Human-AI Interaction. CHI 2019.
+2. **Hancock, J. T., Naaman, M., & Levy, K. (2020)**. AI-Mediated Communication: Definition, Research Agenda, and Ethical Considerations. Journal of Computer-Mediated Communication, 25(1), 89-100.
+3. **Lipton, Z. C. (2016)**. The mythos of model interpretability. arXiv preprint arXiv:1606.03490.
+4. **Miller, T. (2017)**. Explanation in artificial intelligence: Insights from the social sciences. Artificial Intelligence, 267, 1-38.
+5. **Green, B., & Chen, Y. (2019)**. The principles and limits of algorithm-in-the-loop decision making. Proceedings of the ACM on Human-Computer Interaction, 3(CSCW), 1-24.
+6. **Kim, S. S. Y., et al. (2024)**. "I'm Not Sure, But...": Examining the Impact of Large Language Models' Uncertainty Expression on User Reliance and Trust. Proceedings of the 2024 ACM conference on fairness, accountability, and transparency.
+7. **Hofmann, V., Kalluri, P. R., Jurafsky, D., & King, S. (2024)**. AI generates covertly racist decisions about people based on their dialect. Nature, 633(8028), 147-154.
+8. **Marks, M. A., Sabella, M. J., Burke, C. S., & Zaccaro, S. J. (2002)**. The impact of cross-training on team effectiveness. Journal of Applied Psychology, 87(1), 3.
+9. **Nass, C., & Reeves, B. (1996)**. The Media Equation: How People Treat Computers, Television, and New Media Like Real People and Places.
+10. **Grosz, B. J. (2012)**. What Question Would Turing Pose Today?
+
+### 🟡 MEDIUM PRIORITY (Supporting Evidence)
+
+8. **Zhang, B., & Soh, H. (2023)**. Large language models as zero-shot human models for human-robot interaction. 2023 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS).
+9. **Arnold, K. C., Chauncey, K., & Gajos, K. Z. (2020)**. Predictive text encourages predictable writing. Proceedings of the 25th International Conference on Intelligent User Interfaces, 128-138.
+10. **Jakesch, M., Bhat, A., Buschek, D., Zalmanson, L., & Naaman, M. (2023)**. Co-writing with opinionated language models affects users' views. Proceedings of the 2023 CHI Conference on Human Factors in Computing Systems, 1-15.
+11. **Clark, H. H., & Brennan, S. A. (1991)**. Grounding in communication. In L. B. Resnick, J. M. Levine, & S. D. Teasley (Eds.), Perspectives on socially shared cognition (pp. 127-149). American Psychological Association.
+12. **Shahaf, D., Guestrin, C., & Horvitz, E. (2012)**. Trains of thought: Generating information maps. Proceedings of the 21st international conference on World Wide Web, 899-908.
+13. **Grice, H. P. (1975)**. Logic and conversation. In P. Cole & J. L. Morgan (Eds.), Syntax and semantics: Vol. 3. Speech acts (pp. 41-58). Academic Press.
+14. **Ribeiro, M. T., Singh, S., & Guestrin, C. (2016)**. "Why should I trust you?" Explaining the predictions of any classifier. Proceedings of the 22nd ACM SIGKDD international conference on knowledge discovery and data mining, 1135-1144.
+15. **Kim, B., Wattenberg, M., Gilmer, J., Cai, C., Wexler, J., Viegas, F., & Sayres, R. (2018)**. Interpretability beyond feature attribution: Quantitative testing with concept activation vectors (TCAV). International conference on machine learning, 2668-2777.
+16. **Liang, W., Yuksekgonul, M., Mao, Y., Wu, E., & Zou, J. (2023)**. GPT detectors are biased against non-native English writers. Patterns, 4(7).
+17. **Caliskan, A., Bryson, J. J., & Narayanan, A. (2017)**. Semantics derived automatically from language corpora contain human-like biases. Science, 356(6334), 183-186.
+18. **Weisz, J. D., et al. (2024)**. [Updated HAI guidelines - exact citation needed]
+19. **Zhao, J., et al. (2025)**. [Recent HAI guidelines - exact citation needed]
+
+### 🟢 LOW PRIORITY (Historical Context / Not Directly Applicable / Design Principles Only)
+
+11. **Horvitz, E. (1999)**. [Historical reference - exact citation needed]
+12. **Shneiderman, B. (2020)**. [Design principles - exact citation needed]
+13. **Turing, A. M. (1950)**. Computing Machinery and Intelligence. Mind, Vol. LIX, No. 236.
+14. **Nijstad, B. A., & Stroebe, W. (2006)**. How the group affects the mind: A cognitive model of idea generation in groups. Personality and Social Psychology Review, 10(3), 186-213.
+15. **[ChatGPT Group Ideation Study]** - [Citation needed] - Design principle: avoid homogenization
+16. **Nikolaidis, S., & Shah, J. (2013)**. Human-robot cross-training. HRI 2013.
+17. **Jakesch, M., Hancock, J. T., & Naaman, M. (2023)**. Human heuristics for AI-generated language are flawed. Proceedings of the National Academy of Sciences, 120(11), e2208839120.
+18. **Dash, S., Xu, Y., Jalbert, M., & Spiro, E. S. (2025)**. The persuasive potential of AI-paraphrased information at scale. PNAS nexus, 4(7), pgaf207.
+19. **Stasser, G., & Titus, W. (1985)**. Pooling of unshared information in group decision making: Biased information sampling during discussion. Journal of Personality and Social Psychology, 48(6), 1467-1478.
+20. **Grosz, B. J., & Sidner, C. L. (1986)**. Attention, intentions, and the structure of discourse. Computational Linguistics, 12(3), 175-204.
+21. **Grosz, B. J. (1974, 1975, 1977, 1979)**. [Foundational work on dialogue structure - exact citations needed]
+22. **Huber, B., Shieber, S., & Gajos, K. Z. (2020)**. Automatically analyzing brainstorming language behavior with Meeter. [Conference - exact citation needed]
+23. **Alsobay, M., Rothschild, D. M., Hofman, J. M., & Goldstein, D. G. (2024)**. Bringing everyone to the table: LLM-facilitated group decision making. [Conference - exact citation needed]
+24. **Shahaf, D., & Guestrin, C. (2010)**. Connecting the dots between news articles. Proceedings of the 16th ACM SIGKDD international conference on Knowledge discovery and data mining, 623-632.
+25. **Miller, T., Howe, P., & Sonenberg, L. (2017)**. Explainable AI: Beware of Inmates Running the Asylum. IJCAI-17 Workshop on Explainable AI (XAI), p. 36.
+26. **Hilton, D. J. (1990)**. Conversational processes and causal explanation. Psychological Bulletin, 107(1), 65-81.
+
+---
+
+## Citation Format for Report
+
+### APA Style Examples
+
+**Amershi et al. (2019)**:
+```
+Amershi, S., Weld, D., Vorvoreanu, M., Fourney, A., Nushi, B., Collisson, P., 
+Suh, J., Iqbal, S., Bennett, P. N., Inkpen, K., Teevan, J., Kikin-Gil, R., & 
+Horvitz, E. (2019). Guidelines for Human-AI Interaction. Proceedings of the 
+2019 CHI Conference on Human Factors in Computing Systems (CHI '19).
+```
+
+**Marks et al. (2002)**:
+```
+Marks, M. A., Sabella, M. J., Burke, C. S., & Zaccaro, S. J. (2002). The impact 
+of cross-training on team effectiveness. Journal of Applied Psychology, 87(1), 3-13.
+```
+
+**Nass & Reeves (1996)**:
+```
+Nass, C., & Reeves, B. (1996). The Media Equation: How People Treat Computers, 
+Television, and New Media Like Real People and Places. Cambridge University Press.
+```
+
+**Grosz (2012)**:
+```
+Grosz, B. J. (2012). What Question Would Turing Pose Today? [Video]. 
+Retrieved from https://www.youtube.com/watch?v=Plc7nKJWQ9s
+```
+
+**Zhang & Soh (2023)**:
+```
+Zhang, B., & Soh, H. (2023). Large language models as zero-shot human models 
+for human-robot interaction. 2023 IEEE/RSJ International Conference on 
+Intelligent Robots and Systems (IROS). IEEE.
+```
+
+---
+
+## Where to Find Papers
+
+### Academic Databases
+- **ACM Digital Library**: For CHI papers (Amershi et al.)
+- **IEEE Xplore**: For IROS papers (Zhang & Soh)
+- **Google Scholar**: General search
+- **ResearchGate**: Often has PDFs
+- **Semantic Scholar**: Free access to many papers
+
+### Specific Links
+- **Amershi et al. (2019)**: Search "Guidelines for Human-AI Interaction CHI 2019"
+- **Marks et al. (2002)**: Search "cross-training team effectiveness Journal of Applied Psychology"
+- **Nass & Reeves (1996)**: Book - "The Media Equation"
+- **Grosz (2012)**: Video available at provided YouTube link
+
+---
+
+## Notes
+
+- Some citations need exact details (Weisz et al., Zhao et al., Horvitz, Shneiderman)
+- Focus on HIGH PRIORITY papers first
+- Use exact citations from papers when writing the report
+
