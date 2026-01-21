@@ -2,7 +2,14 @@
   max-width: 1400px;
   margin: 0 auto;
   padding: 2rem;
+  padding-left: calc(2rem + 240px); /* Account for sidebar width */
   min-height: 100vh;
+}
+
+@media (max-width: 768px) {
+  .App {
+    padding-left: calc(1rem + 200px); /* Account for smaller sidebar on mobile */
+  }
 }
 
 /* Landing Page Styles */

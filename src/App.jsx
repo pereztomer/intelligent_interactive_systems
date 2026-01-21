@@ -487,6 +487,13 @@ function App() {
     setCurrentAttempt(null)
   }
 
+  // Handle navigation to sessions list
+  const handleNavigateToSessions = () => {
+    setCurrentView('sessionList')
+    setCurrentSession(null)
+    setCurrentAttempt(null)
+  }
+
   // Handle session selection
   const handleSelectSession = async (sessionId) => {
     await loadSession(sessionId)
@@ -712,7 +719,13 @@ function App() {
   if (currentView === 'landing') {
     return (
       <div className="App">
-        <Header onNavigateHome={handleNavigateHome} />
+        <Header 
+          onNavigateHome={handleNavigateHome}
+          onNavigateToSessions={handleNavigateToSessions}
+          currentView={currentView}
+          currentSession={currentSession}
+          totalSessions={sessions.length}
+        />
         <SurveyModal 
           isOpen={showSurvey} 
           onClose={handleSurveyCancel}
@@ -756,7 +769,13 @@ function App() {
   if (currentView === 'sessionList') {
     return (
       <div className="App">
-        <Header onNavigateHome={handleNavigateHome} />
+        <Header 
+          onNavigateHome={handleNavigateHome}
+          onNavigateToSessions={handleNavigateToSessions}
+          currentView={currentView}
+          currentSession={currentSession}
+          totalSessions={sessions.length}
+        />
         <div className="session-list-page">
           <div className="session-list-header">
             <h2>My Sessions</h2>
@@ -820,7 +839,13 @@ function App() {
   if (currentView === 'session' && currentSession) {
     return (
       <div className="App">
-        <Header onNavigateHome={handleNavigateHome} />
+        <Header 
+          onNavigateHome={handleNavigateHome}
+          onNavigateToSessions={handleNavigateToSessions}
+          currentView={currentView}
+          currentSession={currentSession}
+          totalSessions={sessions.length}
+        />
         <div className="session-page">
           <div className="session-header">
             <h2>{currentSession.name}</h2>
@@ -1029,7 +1054,13 @@ function App() {
     
     return (
       <div className="App">
-        <Header onNavigateHome={handleNavigateHome} />
+        <Header 
+          onNavigateHome={handleNavigateHome}
+          onNavigateToSessions={handleNavigateToSessions}
+          currentView={currentView}
+          currentSession={currentSession}
+          totalSessions={sessions.length}
+        />
         {/* Rating Form Modal */}
         {showRatingForm && (
           <div className="survey-overlay" onClick={() => setShowRatingForm(false)}>
