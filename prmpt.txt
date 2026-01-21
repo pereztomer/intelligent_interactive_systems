@@ -1,7 +1,0 @@
-take those features from App_2.jsx and apply them on the original file:
-
-1. ✅ Analysis button in header when viewing an attempt
-2. ✅ Interactive transcription with timestamps (line 1292)
-   ✅ Shows transcriptionSegments in UI
-   ✅ Displays word-by-word timing
-   ✅ Stores segments in attempt data (line 732)
