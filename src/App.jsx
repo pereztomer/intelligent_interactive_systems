@@ -468,7 +468,7 @@ function App() {
         body: JSON.stringify({
           sessionName: currentSession.name,
           sessionId: currentSession.id,
-          attemptNumber: currentSession.attempts.findIndex(a => a.id === currentAttempt.id) + 1,
+          attemptNumber: currentSession.attempts.length - currentSession.attempts.findIndex(a => a.id === currentAttempt.id),
           feedback: ratingData
         })
       })
@@ -753,6 +753,75 @@ function App() {
     feedbackLines.forEach(line => lines.push(line))
     
     return lines.join('\n')
+  }
+
+  // Format Gemini Feedback with proper structure
+  const formatGeminiFeedbackHTML = (feedbackText) => {
+    if (!feedbackText) return null
+
+    // Split into lines and clean up
+    const lines = feedbackText.split('\n').map(line => line.trim()).filter(line => line)
+    
+    const sections = []
+    let currentSection = null
+    let currentItem = null
+
+    lines.forEach(line => {
+      // Remove markdown asterisks
+      const cleanLine = line.replace(/^\*+\s*/, '').replace(/\*\*/g, '')
+      
+      // Check if this is a section header (all caps)
+      const isHeader = /^[A-Z\s&]+:?\s*$/.test(cleanLine)
+      
+      // Check if this is a labeled item (Improvement 1:, Preservation 2:, etc.)
+      const labelMatch = cleanLine.match(/^(Improvement \d+|Preservation \d+):\s*(.*)$/i)
+      
+      if (isHeader) {
+        // Save previous section if exists
+        if (currentSection) {
+          if (currentItem) {
+            currentSection.items.push(currentItem)
+            currentItem = null
+          }
+          sections.push(currentSection)
+        }
+        // Start new section
+        currentSection = {
+          header: cleanLine.replace(/:$/, ''),
+          items: []
+        }
+      } else if (labelMatch && currentSection) {
+        // Save previous item if exists
+        if (currentItem) {
+          currentSection.items.push(currentItem)
+        }
+        // Start new labeled item
+        currentItem = {
+          label: labelMatch[1],
+          content: [labelMatch[2]]
+        }
+      } else if (currentItem && cleanLine) {
+        // Add to current item's content
+        currentItem.content.push(cleanLine)
+      } else if (currentSection && cleanLine) {
+        // Regular text without label
+        if (currentItem) {
+          currentSection.items.push(currentItem)
+          currentItem = null
+        }
+        currentSection.items.push({ label: null, content: [cleanLine] })
+      }
+    })
+    
+    // Add last item and section
+    if (currentItem && currentSection) {
+      currentSection.items.push(currentItem)
+    }
+    if (currentSection) {
+      sections.push(currentSection)
+    }
+
+    return sections
   }
 
   const formatAnalysisResults = (result) => {
@@ -1242,7 +1311,7 @@ function App() {
                   onClick={() => handleSelectAttempt(attempt)}
                 >
                   <div className="attempt-info">
-                    <h4>Attempt {currentSession.attempts.indexOf(attempt) + 1}</h4>
+                    <h4>Attempt {currentSession.attempts.length - currentSession.attempts.indexOf(attempt)}</h4>
                     <p className="attempt-meta">
                       {formatDate(attempt.timestamp)} • {formatTime(attempt.duration || 0)}
                     </p>
@@ -1668,9 +1737,56 @@ function App() {
                       Rate me 😊
                     </button>
                   </div>
-                  <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>
-                    {currentAttempt.geminiFeedback}
-                  </pre>
+                  <div style={{ lineHeight: '1.8' }}>
+                    {(() => {
+                      const sections = formatGeminiFeedbackHTML(currentAttempt.geminiFeedback)
+                      if (!sections) {
+                        return <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>{currentAttempt.geminiFeedback}</pre>
+                      }
+                      
+                      return sections.map((section, idx) => (
+                        <div key={idx} style={{ marginBottom: '2rem' }}>
+                          <h2 style={{ 
+                            fontSize: '1.5rem', 
+                            fontWeight: 'bold', 
+                            marginBottom: '1rem',
+                            color: '#2c3e50',
+                            borderBottom: '2px solid #3498db',
+                            paddingBottom: '0.5rem'
+                          }}>
+                            {section.header}
+                          </h2>
+                          <div style={{ paddingLeft: '1rem' }}>
+                            {section.items.map((item, itemIdx) => {
+                              if (item.label) {
+                                return (
+                                  <div key={itemIdx} style={{ marginBottom: '1.5rem' }}>
+                                    <p style={{ 
+                                      marginBottom: '0.5rem',
+                                      fontSize: '1rem',
+                                      color: '#34495e'
+                                    }}>
+                                      <strong>{item.label}:</strong> {item.content.join(' ')}
+                                    </p>
+                                  </div>
+                                )
+                              }
+                              
+                              return (
+                                <p key={itemIdx} style={{ 
+                                  marginBottom: '0.75rem',
+                                  fontSize: '1rem',
+                                  color: '#34495e'
+                                }}>
+                                  {item.content.join(' ')}
+                                </p>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      ))
+                    })()}
+                  </div>
                 </div>
               )}
               
