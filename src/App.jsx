@@ -731,33 +731,40 @@ function App() {
           onClose={handleSurveyCancel}
           onSubmit={handleSurveySubmit}
         />
-        <div className="landing-page">
-          <h1 className="app-title">Presentation Rehearsal Coach</h1>
+        <div className="main-content-card">
+          {/* Hero Section - Top 1/4 */}
+          <div className="hero-section">
+            <img src="/hero-image.png" alt="Hero" className="hero-image" />
+            <h1 className="hero-title">Presentation Rehearsal Coach</h1>
+          </div>
           
-          <div className="landing-content">
-            <div className="landing-main">
-              <div className="landing-text">
-                <p className="problem-text">
-                  Strong presentations depend on clarity, pacing, and alignment between spoken content and slides. 
-                  Most people practice alone due to shyness, lack of listening audience, and receive little objective feedback. 
-                  While existing tools effectively analyze speech or slide mechanics individually, the market remains fragmented. 
-                  There is a lack of accessible, unified systems that evaluate delivery, slide usage, and content coherence in a single interface. 
-                  The goal is to create an AI-based coach that provides concrete, personalized insights to help users significantly improve their communication skills.
-                </p>
+          {/* Page Content - Bottom 3/4 */}
+          <div className="page-content">
+            <div className="landing-content">
+              <div className="landing-main">
+                <div className="landing-text">
+                  <p className="problem-text">
+                    Strong presentations depend on clarity, pacing, and alignment between spoken content and slides. 
+                    Most people practice alone due to shyness, lack of listening audience, and receive little objective feedback. 
+                    While existing tools effectively analyze speech or slide mechanics individually, the market remains fragmented. 
+                    There is a lack of accessible, unified systems that evaluate delivery, slide usage, and content coherence in a single interface. 
+                    The goal is to create an AI-based coach that provides concrete, personalized insights to help users significantly improve their communication skills.
+                  </p>
+                </div>
+                <div className="landing-image">
+                  <img src="/workflow.png" alt="Workflow: Upload Slides → Practice → Feedback" />
+                </div>
               </div>
-              <div className="landing-image">
-                <img src="/workflow.png" alt="Workflow: Upload Slides → Practice → Feedback" />
+              
+              <div className="cta-section">
+                <button className="cta-button" onClick={handleNewSession}>
+                  Start New Session
+                </button>
+                <button className="cta-button secondary" onClick={handleContinueSession}>
+                  Continue Existing Session
+                </button>
+                {error && <p className="error">{error}</p>}
               </div>
-            </div>
-            
-            <div className="cta-section">
-              <button className="cta-button" onClick={handleNewSession}>
-                Start New Session
-              </button>
-              <button className="cta-button secondary" onClick={handleContinueSession}>
-                Continue Existing Session
-              </button>
-              {error && <p className="error">{error}</p>}
             </div>
           </div>
         </div>
@@ -776,60 +783,71 @@ function App() {
           currentSession={currentSession}
           totalSessions={sessions.length}
         />
-        <div className="session-list-page">
-          <div className="session-list-header">
-            <h2>My Sessions</h2>
-            <button className="back-button" onClick={() => setCurrentView('landing')}>
-              ← Back
-            </button>
+        <div className="main-content-card">
+          {/* Hero Section - Top 1/4 */}
+          <div className="hero-section">
+            <img src="/hero-image.png" alt="Hero" className="hero-image" />
+            <h1 className="hero-title">Presentation Rehearsal Coach</h1>
           </div>
+          
+          {/* Page Content - Bottom 3/4 */}
+          <div className="page-content">
+            <div className="session-list-page">
+              <div className="session-list-header">
+                <h2>My Sessions</h2>
+                <button className="back-button" onClick={() => setCurrentView('landing')}>
+                  ← Back
+                </button>
+              </div>
 
-          {sessions.length === 0 ? (
-            <div className="no-sessions">
-              <p>No sessions yet. Start a new session to begin!</p>
-              <button className="cta-button" onClick={handleNewSession}>
-                Start New Session
-              </button>
-            </div>
-          ) : (
-            <div className="sessions-list">
-              {sessions.map((session) => (
-                <div
-                  key={session.id}
-                  className="session-item"
-                  onClick={() => handleSelectSession(session.id)}
-                >
-                  <div className="session-info">
-                    <h3>{session.name}</h3>
-                    <p className="session-meta">
-                      {formatDate(session.createdAt)} • {session.attempts?.length || 0} attempt(s)
-                    </p>
-                    {session.processFeedback && (
-                      <p className="feedback-preview">📊 Process Feedback Available</p>
-                    )}
-                  </div>
-                  <div className="session-actions">
-                    <button
-                      className="delete-button"
-                      onClick={async (e) => {
-                        e.stopPropagation()
-                        if (confirm('Are you sure you want to delete this session?')) {
-                          try {
-                            await deleteSession(session.id)
-                            loadSessions()
-                          } catch (err) {
-                            alert('Error deleting session')
-                          }
-                        }
-                      }}
-                    >
-                      🗑️
-                    </button>
-                  </div>
+              {sessions.length === 0 ? (
+                <div className="no-sessions">
+                  <p>No sessions yet. Start a new session to begin!</p>
+                  <button className="cta-button" onClick={handleNewSession}>
+                    Start New Session
+                  </button>
                 </div>
-              ))}
+              ) : (
+                <div className="sessions-list">
+                  {sessions.map((session) => (
+                    <div
+                      key={session.id}
+                      className="session-item"
+                      onClick={() => handleSelectSession(session.id)}
+                    >
+                      <div className="session-info">
+                        <h3>{session.name}</h3>
+                        <p className="session-meta">
+                          {formatDate(session.createdAt)} • {session.attempts?.length || 0} attempt(s)
+                        </p>
+                        {session.processFeedback && (
+                          <p className="feedback-preview">📊 Process Feedback Available</p>
+                        )}
+                      </div>
+                      <div className="session-actions">
+                        <button
+                          className="delete-button"
+                          onClick={async (e) => {
+                            e.stopPropagation()
+                            if (confirm('Are you sure you want to delete this session?')) {
+                              try {
+                                await deleteSession(session.id)
+                                loadSessions()
+                              } catch (err) {
+                                alert('Error deleting session')
+                              }
+                            }
+                          }}
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </div>
     )
@@ -846,16 +864,25 @@ function App() {
           currentSession={currentSession}
           totalSessions={sessions.length}
         />
-        <div className="session-page">
-          <div className="session-header">
-            <h2>{currentSession.name}</h2>
-            <button className="back-button" onClick={() => {
-              setCurrentSession(null)
-              setCurrentView('sessionList')
-            }}>
-              ← Back
-            </button>
+        <div className="main-content-card">
+          {/* Hero Section - Top 1/4 */}
+          <div className="hero-section">
+            <img src="/hero-image.png" alt="Hero" className="hero-image" />
+            <h1 className="hero-title">Presentation Rehearsal Coach</h1>
           </div>
+          
+          {/* Page Content - Bottom 3/4 */}
+          <div className="page-content">
+            <div className="session-page">
+              <div className="session-header">
+                <h2>{currentSession.name}</h2>
+                <button className="back-button" onClick={() => {
+                  setCurrentSession(null)
+                  setCurrentView('sessionList')
+                }}>
+                  ← Back
+                </button>
+              </div>
 
           <div className="session-feedback-section">
             {currentSession.processFeedback ? (
@@ -1036,6 +1063,8 @@ function App() {
               <p>No attempts yet. Create your first attempt to start practicing!</p>
             </div>
           )}
+            </div>
+          </div>
         </div>
       </div>
     )
@@ -1217,7 +1246,16 @@ function App() {
             </div>
           </div>
         )}
-        <div className="presentation-viewer">
+        <div className="main-content-card">
+          {/* Hero Section - Top 1/4 */}
+          <div className="hero-section">
+            <img src="/hero-image.png" alt="Hero" className="hero-image" />
+            <h1 className="hero-title">Presentation Rehearsal Coach</h1>
+          </div>
+          
+          {/* Page Content - Bottom 3/4 */}
+          <div className="page-content">
+            <div className="presentation-viewer">
           {/* Header bar with session name, attempt number, and back button */}
           {(currentSession || currentAttempt) && (
             <div className="session-header">
@@ -1538,6 +1576,8 @@ function App() {
               )}
             </div>
           )}
+            </div>
+          </div>
         </div>
       </div>
     )
