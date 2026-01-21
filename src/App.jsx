@@ -24,6 +24,7 @@ import {
 } from './utils/apiClient'
 import { extractAudioFromVideo } from './utils/audioProcessing'
 import { generateSpeakerProfile, formatGeminiFeedback, formatAnalysisResults } from './utils/analysisFormatting'
+import { formatTime, formatDate } from './utils/formatting'
 
 // Set up PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`
@@ -414,17 +415,6 @@ function App() {
       }
     }
   }, [])
-
-  const formatTime = (seconds) => {
-    const roundedSeconds = Math.floor(seconds)
-    const mins = Math.floor(roundedSeconds / 60)
-    const secs = roundedSeconds % 60
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-  }
-
-  const formatDate = (timestamp) => {
-    return new Date(timestamp).toLocaleString()
-  }
 
   // Handle new session creation
   const handleNewSession = async () => {
