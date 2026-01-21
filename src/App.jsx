@@ -4,6 +4,7 @@ import 'react-pdf/dist/esm/Page/AnnotationLayer.css'
 import 'react-pdf/dist/esm/Page/TextLayer.css'
 import './App.css'
 import SurveyModal from './components/SurveyModal'
+import Header from './components/Header'
 import { 
   createSession, 
   getAllSessions, 
@@ -479,6 +480,13 @@ function App() {
     setCurrentView('sessionList')
   }
 
+  // Handle navigation to home
+  const handleNavigateHome = () => {
+    setCurrentView('landing')
+    setCurrentSession(null)
+    setCurrentAttempt(null)
+  }
+
   // Handle session selection
   const handleSelectSession = async (sessionId) => {
     await loadSession(sessionId)
@@ -704,6 +712,7 @@ function App() {
   if (currentView === 'landing') {
     return (
       <div className="App">
+        <Header onNavigateHome={handleNavigateHome} />
         <SurveyModal 
           isOpen={showSurvey} 
           onClose={handleSurveyCancel}
@@ -747,6 +756,7 @@ function App() {
   if (currentView === 'sessionList') {
     return (
       <div className="App">
+        <Header onNavigateHome={handleNavigateHome} />
         <div className="session-list-page">
           <div className="session-list-header">
             <h2>My Sessions</h2>
@@ -810,6 +820,7 @@ function App() {
   if (currentView === 'session' && currentSession) {
     return (
       <div className="App">
+        <Header onNavigateHome={handleNavigateHome} />
         <div className="session-page">
           <div className="session-header">
             <h2>{currentSession.name}</h2>
@@ -1018,6 +1029,7 @@ function App() {
     
     return (
       <div className="App">
+        <Header onNavigateHome={handleNavigateHome} />
         {/* Rating Form Modal */}
         {showRatingForm && (
           <div className="survey-overlay" onClick={() => setShowRatingForm(false)}>
