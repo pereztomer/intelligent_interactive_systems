@@ -788,17 +788,18 @@ function App() {
           <div className="hero-section">
             <img src="/hero-image.png" alt="Hero" className="hero-image" />
             <h1 className="hero-title">Presentation Rehearsal Coach</h1>
+            {/* Session List Header Overlay */}
+            <div className="session-list-header-overlay">
+              <h2>My Sessions</h2>
+              <button className="back-button" onClick={() => setCurrentView('landing')}>
+                ← Back
+              </button>
+            </div>
           </div>
           
           {/* Page Content - Bottom 3/4 */}
           <div className="page-content">
             <div className="session-list-page">
-              <div className="session-list-header">
-                <h2>My Sessions</h2>
-                <button className="back-button" onClick={() => setCurrentView('landing')}>
-                  ← Back
-                </button>
-              </div>
 
               {sessions.length === 0 ? (
                 <div className="no-sessions">

@@ -3,7 +3,8 @@
   margin: 0 auto;
   padding: 2rem;
   padding-left: calc(2rem + 240px); /* Account for sidebar width */
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
 }
 
 @media (max-width: 768px) {
@@ -20,13 +21,18 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  min-height: 80vh;
+  height: calc(100vh - 4rem);
+  max-height: calc(100vh - 4rem);
+  position: relative;
 }
 
 /* Hero Section - Top 1/4 */
 .hero-section {
-  position: relative;
-  flex: 0 0 25%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 25vh;
   min-height: 200px;
   max-height: 300px;
   width: 100%;
@@ -34,6 +40,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 10;
+  background: white;
 }
 
 .hero-image {
@@ -72,10 +80,26 @@
 
 /* Page Content - Bottom 3/4 */
 .page-content {
-  flex: 1;
+  position: absolute;
+  top: 25vh;
+  left: 0;
+  right: 0;
+  bottom: 0;
   padding: 2rem;
   overflow-y: auto;
-  min-height: 0; /* Allows flex child to shrink */
+  overflow-x: hidden;
+  min-height: 0;
+}
+
+@media (max-width: 768px) {
+  .hero-section {
+    height: 25vh;
+    min-height: 150px;
+  }
+  
+  .page-content {
+    top: 25vh;
+  }
 }
 
 /* Landing Page Styles */
@@ -768,24 +792,46 @@
   width: 100%;
 }
 
-.session-list-header {
+.session-list-header-overlay {
+  position: absolute;
+  bottom: 1rem;
+  left: 2rem;
+  right: 2rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
-  background: var(--bg-card, rgba(255, 255, 255, 0.95));
-  padding: 1.5rem;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  z-index: 20;
 }
 
-.session-list-header h2 {
+.session-list-header-overlay h2 {
   margin: 0;
   font-size: 2rem;
-  background: linear-gradient(135deg, var(--navy-primary, #1e3a5f) 0%, var(--navy-secondary, #2c5282) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: white;
+  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7);
+  font-weight: 700;
+}
+
+.session-list-header-overlay .back-button {
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--navy-primary, #1e3a5f);
+  border: none;
+  padding: 0.7em 1.5em;
+  font-size: 1em;
+  font-weight: 600;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.25s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.session-list-header-overlay .back-button:hover {
+  background: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.session-list-header {
+  display: none; /* Hide the old header in page-content */
 }
 
 .no-sessions {
