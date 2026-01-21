@@ -57,6 +57,7 @@ function App() {
   // Analysis state
   const [pyodide, setPyodide] = useState(null)
   const [analyzing, setAnalyzing] = useState({})
+  const [generatingSessionFeedback, setGeneratingSessionFeedback] = useState(false)
 
   // Load sessions on mount
   useEffect(() => {
@@ -1192,11 +1193,14 @@ function App() {
                   className="regenerate-feedback-button"
                   onClick={async () => {
                     try {
+                      setGeneratingSessionFeedback(true)
+                      
                       // Check if backend is available
                       const useBackend = await checkBackendAvailable()
                       
                       if (!useBackend) {
                         alert('Backend server is not running. Please start it to regenerate AI session feedback.')
+                        setGeneratingSessionFeedback(false)
                         return
                       }
                       
@@ -1224,10 +1228,13 @@ function App() {
                     } catch (err) {
                       console.error('Error regenerating session feedback:', err)
                       alert('Failed to regenerate session feedback: ' + err.message)
+                    } finally {
+                      setGeneratingSessionFeedback(false)
                     }
                   }}
+                  disabled={generatingSessionFeedback}
                 >
-                  Regenerate Feedback
+                  {generatingSessionFeedback ? '⏳ Generating...' : 'Regenerate Feedback'}
                 </button>
               </div>
             ) : (
@@ -1236,11 +1243,14 @@ function App() {
                   className="generate-feedback-button"
                   onClick={async () => {
                     try {
+                      setGeneratingSessionFeedback(true)
+                      
                       // Check if backend is available
                       const useBackend = await checkBackendAvailable()
                       
                       if (!useBackend) {
                         alert('Backend server is not running. Please start it to generate AI session feedback.')
+                        setGeneratingSessionFeedback(false)
                         return
                       }
                       
@@ -1268,10 +1278,13 @@ function App() {
                     } catch (err) {
                       console.error('Error generating session feedback:', err)
                       alert('Failed to generate session feedback: ' + err.message)
+                    } finally {
+                      setGeneratingSessionFeedback(false)
                     }
                   }}
+                  disabled={generatingSessionFeedback}
                 >
-                  Generate Session Feedback
+                  {generatingSessionFeedback ? '⏳ Generating...' : 'Generate Session Feedback'}
                 </button>
               )
             )}
