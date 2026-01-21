@@ -725,6 +725,8 @@ function App() {
           currentView={currentView}
           currentSession={currentSession}
           totalSessions={sessions.length}
+          sessions={sessions}
+          onSelectSession={handleSelectSession}
         />
         <SurveyModal 
           isOpen={showSurvey} 
@@ -782,6 +784,8 @@ function App() {
           currentView={currentView}
           currentSession={currentSession}
           totalSessions={sessions.length}
+          sessions={sessions}
+          onSelectSession={handleSelectSession}
         />
         <div className="main-content-card">
           {/* Hero Section - Top 1/4 */}
@@ -791,9 +795,6 @@ function App() {
             {/* Session List Header Overlay */}
             <div className="session-list-header-overlay">
               <h2>My Sessions</h2>
-              <button className="back-button" onClick={() => setCurrentView('landing')}>
-                ← Back
-              </button>
             </div>
           </div>
           
@@ -864,118 +865,119 @@ function App() {
           currentView={currentView}
           currentSession={currentSession}
           totalSessions={sessions.length}
+          sessions={sessions}
+          onSelectSession={handleSelectSession}
         />
         <div className="main-content-card">
           {/* Hero Section - Top 1/4 */}
           <div className="hero-section">
             <img src="/hero-image.png" alt="Hero" className="hero-image" />
             <h1 className="hero-title">Presentation Rehearsal Coach</h1>
+            
+            {/* Session Header Overlay */}
+            <div className="session-header-overlay">
+              <h2>{currentSession.name}</h2>
+            </div>
+
+            {/* Session Actions Overlay */}
+            <div className="session-actions-overlay">
+              <div className="session-actions-bar-overlay">
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={handleFileUploadForAttempt}
+                  id="file-upload-attempt"
+                  style={{ display: 'none' }}
+                />
+                {currentSession.processFeedback ? (
+                  <button 
+                    className="regenerate-feedback-button"
+                    onClick={async () => {
+                      try {
+                        // Check if backend is available
+                        const useBackend = await checkBackendAvailable()
+                        
+                        if (!useBackend) {
+                          alert('Backend server is not running. Please start it to regenerate AI session feedback.')
+                          return
+                        }
+                        
+                        // Generate session feedback with Gemini
+                        const result = await generateSessionFeedbackAPI(currentSession.name, currentSession.id)
+                        await updateSession(currentSession.id, { processFeedback: result.feedback })
+                        await loadSession(currentSession.id)
+                        
+                        alert('Session feedback regenerated successfully!')
+                      } catch (err) {
+                        console.error('Error regenerating session feedback:', err)
+                        alert('Failed to regenerate session feedback: ' + err.message)
+                      }
+                    }}
+                  >
+                    Regenerate Feedback
+                  </button>
+                ) : (
+                  currentSession.attempts && currentSession.attempts.length > 0 && (
+                    <button 
+                      className="generate-feedback-button"
+                      onClick={async () => {
+                        try {
+                          // Check if backend is available
+                          const useBackend = await checkBackendAvailable()
+                          
+                          if (!useBackend) {
+                            alert('Backend server is not running. Please start it to generate AI session feedback.')
+                            return
+                          }
+                          
+                          // Generate session feedback with Gemini
+                          const result = await generateSessionFeedbackAPI(currentSession.name, currentSession.id)
+                          await updateSession(currentSession.id, { processFeedback: result.feedback })
+                          await loadSession(currentSession.id)
+                          
+                          alert('Session feedback generated successfully!')
+                        } catch (err) {
+                          console.error('Error generating session feedback:', err)
+                          alert('Failed to generate session feedback: ' + err.message)
+                        }
+                      }}
+                    >
+                      Generate Session Feedback
+                    </button>
+                  )
+                )}
+                <button 
+                  className="cta-button"
+                  onClick={() => handleNewAttempt(false)}
+                >
+                  + New Attempt (Upload PDF)
+                </button>
+                {currentSession.attempts && currentSession.attempts.length > 0 && (
+                  <button 
+                    className="cta-button secondary"
+                    onClick={() => handleNewAttempt(true)}
+                  >
+                    + New Attempt (Use Previous PDF)
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
           
           {/* Page Content - Bottom 3/4 */}
           <div className="page-content">
             <div className="session-page">
-              <div className="session-header">
-                <h2>{currentSession.name}</h2>
-                <button className="back-button" onClick={() => {
-                  setCurrentSession(null)
-                  setCurrentView('sessionList')
-                }}>
-                  ← Back
-                </button>
-              </div>
-
-          <div className="session-feedback-section">
-            {currentSession.processFeedback ? (
-              <div className="session-feedback-box">
-                <h3>Session Process Feedback</h3>
-                <div className="session-feedback-content">
-                  {currentSession.processFeedback.split(/(?=\d+\.\s)/).filter(line => line.trim()).map((line, idx) => (
-                    <p key={idx}>{line.trim()}</p>
-                  ))}
+              {/* Session Feedback Box (if exists) */}
+              {currentSession.processFeedback && (
+                <div className="session-feedback-box">
+                  <h3>Session Process Feedback</h3>
+                  <div className="session-feedback-content">
+                    {currentSession.processFeedback.split(/(?=\d+\.\s)/).filter(line => line.trim()).map((line, idx) => (
+                      <p key={idx}>{line.trim()}</p>
+                    ))}
+                  </div>
                 </div>
-                <button 
-                  className="regenerate-feedback-button"
-                  onClick={async () => {
-                    try {
-                      // Check if backend is available
-                      const useBackend = await checkBackendAvailable()
-                      
-                      if (!useBackend) {
-                        alert('Backend server is not running. Please start it to regenerate AI session feedback.')
-                        return
-                      }
-                      
-                      // Generate session feedback with Gemini
-                      const result = await generateSessionFeedbackAPI(currentSession.name, currentSession.id)
-                      await updateSession(currentSession.id, { processFeedback: result.feedback })
-                      await loadSession(currentSession.id)
-                      
-                      alert('Session feedback regenerated successfully!')
-                    } catch (err) {
-                      console.error('Error regenerating session feedback:', err)
-                      alert('Failed to regenerate session feedback: ' + err.message)
-                    }
-                  }}
-                >
-                  Regenerate Feedback
-                </button>
-              </div>
-            ) : (
-              currentSession.attempts && currentSession.attempts.length > 0 && (
-                <button 
-                  className="generate-feedback-button"
-                  onClick={async () => {
-                    try {
-                      // Check if backend is available
-                      const useBackend = await checkBackendAvailable()
-                      
-                      if (!useBackend) {
-                        alert('Backend server is not running. Please start it to generate AI session feedback.')
-                        return
-                      }
-                      
-                      // Generate session feedback with Gemini
-                      const result = await generateSessionFeedbackAPI(currentSession.name, currentSession.id)
-                      await updateSession(currentSession.id, { processFeedback: result.feedback })
-                      await loadSession(currentSession.id)
-                      
-                      alert('Session feedback generated successfully!')
-                    } catch (err) {
-                      console.error('Error generating session feedback:', err)
-                      alert('Failed to generate session feedback: ' + err.message)
-                    }
-                  }}
-                >
-                  Generate Session Feedback
-                </button>
-              )
-            )}
-          </div>
-
-          <div className="session-actions-bar">
-            <input
-              type="file"
-              accept=".pdf"
-              onChange={handleFileUploadForAttempt}
-              id="file-upload-attempt"
-              style={{ display: 'none' }}
-            />
-            <button 
-              className="cta-button"
-              onClick={() => handleNewAttempt(false)}
-            >
-              + New Attempt (Upload PDF)
-            </button>
-            {currentSession.attempts && currentSession.attempts.length > 0 && (
-              <button 
-                className="cta-button secondary"
-                onClick={() => handleNewAttempt(true)}
-              >
-                + New Attempt (Use Previous PDF)
-              </button>
-            )}
-          </div>
+              )}
 
           {currentSession.attempts && currentSession.attempts.length > 0 ? (
             <div className="attempts-list">
@@ -1090,6 +1092,8 @@ function App() {
           currentView={currentView}
           currentSession={currentSession}
           totalSessions={sessions.length}
+          sessions={sessions}
+          onSelectSession={handleSelectSession}
         />
         {/* Rating Form Modal */}
         {showRatingForm && (
