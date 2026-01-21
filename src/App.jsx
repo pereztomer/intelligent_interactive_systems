@@ -1572,22 +1572,41 @@ function App() {
               </h2>
               <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
                 {currentAttempt && (
-                  <button
-                    className="analyze-button"
-                    onClick={async () => {
-                      if (currentAttempt && currentAttempt.id) {
-                        await handleAnalyzeAttempt(currentAttempt.id)
-                      }
-                    }}
-                    disabled={analyzing[currentAttempt?.id] || !pyodide}
-                    style={{ 
-                      padding: '0.75rem 1.5rem', 
-                      fontSize: '1rem',
-                      fontWeight: 600
-                    }}
-                  >
-                    {!pyodide ? 'Loading Python...' : analyzing[currentAttempt?.id] ? 'Analyzing...' : '📊 Analyze Attempt'}
-                  </button>
+                  <>
+                    <button
+                      className="analyze-button"
+                      onClick={async () => {
+                        if (currentAttempt && currentAttempt.id) {
+                          await handleAnalyzeAttempt(currentAttempt.id)
+                        }
+                      }}
+                      disabled={analyzing[currentAttempt?.id] || !pyodide}
+                      style={{ 
+                        padding: '0.75rem 1.5rem', 
+                        fontSize: '1rem',
+                        fontWeight: 600
+                      }}
+                    >
+                      {!pyodide ? 'Loading Python...' : analyzing[currentAttempt?.id] ? 'Analyzing...' : '📊 Analyze Attempt'}
+                    </button>
+                    <button
+                      className="analyze-button secondary"
+                      onClick={async () => {
+                        if (currentAttempt && currentAttempt.id) {
+                          await handleGenerateAIFeedback(currentAttempt.id)
+                        }
+                      }}
+                      disabled={analyzing[`ai_${currentAttempt?.id}`] || !currentAttempt.audioPath}
+                      title={!currentAttempt.audioPath ? 'Run full Analysis first' : 'Generate AI feedback using Gemini'}
+                      style={{ 
+                        padding: '0.75rem 1.5rem', 
+                        fontSize: '1rem',
+                        fontWeight: 600
+                      }}
+                    >
+                      {analyzing[`ai_${currentAttempt?.id}`] ? '⏳ Generating...' : '🤖 AI Feedback'}
+                    </button>
+                  </>
                 )}
                 <button 
                   className="back-button"
