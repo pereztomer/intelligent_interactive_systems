@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { getAllUsers, createUser } from '../utils/userStorage'
 import './UserSelection.css'
 
-function UserSelection({ onUserSelect, onCreateUser }) {
+function UserSelection({ onUserSelect, onCreateUser, onAdminLogin }) {
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -72,6 +72,12 @@ function UserSelection({ onUserSelect, onCreateUser }) {
           <button className="create-user-button" onClick={handleCreateNew}>
             + Create New User
           </button>
+          
+          {onAdminLogin && (
+            <button className="admin-login-link-button" onClick={onAdminLogin}>
+              🔐 Admin Access
+            </button>
+          )}
         </div>
       </div>
     </div>

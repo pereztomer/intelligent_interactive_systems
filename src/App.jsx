@@ -3,11 +3,12 @@ import { Document, Page, pdfjs } from 'react-pdf'
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css'
 import 'react-pdf/dist/esm/Page/TextLayer.css'
 import './App.css'
-import SurveyModal from './components/SurveyModal'
 import Header from './components/Header'
 import UserSelection from './components/UserSelection'
 import CreateUserPage from './components/CreateUserPage'
 import ProfilePage from './components/ProfilePage'
+import AdminLogin from './components/AdminLogin'
+import AdminDashboard from './components/AdminDashboard'
 import { 
   createSession, 
   getAllSessions, 
@@ -36,11 +37,11 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/$
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null)
-  const [currentView, setCurrentView] = useState('userSelection') // 'userSelection', 'createUser', 'landing', 'sessionList', 'session', 'attempt', 'createAttempt', 'profile'
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [currentView, setCurrentView] = useState('userSelection') // 'userSelection', 'createUser', 'landing', 'sessionList', 'session', 'attempt', 'createAttempt', 'profile', 'adminLogin', 'adminDashboard'
   const [sessions, setSessions] = useState([])
   const [currentSession, setCurrentSession] = useState(null)
   const [currentAttempt, setCurrentAttempt] = useState(null)
-  const [showSurvey, setShowSurvey] = useState(false)
   const [showRatingForm, setShowRatingForm] = useState(false)
   const [ratingData, setRatingData] = useState({
     relevance: '',
@@ -464,39 +465,21 @@ function App() {
     setCurrentView('userSelection')
   }
 
-  // Handle survey submission (for existing users creating new session)
-  const handleSurveySubmit = async (surveyData) => {
-    try {
-      if (!currentUser) {
-        setCurrentView('userSelection')
-        return
-      }
-      
-      // Existing user creating new session - no prompt, just create with default name
-      const session = await createSession(null, surveyData, currentUser.id)
-      await loadSession(session.id)
-      setShowSurvey(false)
-      setCurrentView('session')
-    } catch (err) {
-      console.error('Error creating session:', err)
-      alert('Failed to create session: ' + err.message)
-      setShowSurvey(false)
-    }
-  }
-
   // Handle new session creation (for existing users)
   const handleNewSession = async () => {
     if (!currentUser) {
       setCurrentView('userSelection')
       return
     }
-    // For existing users, show survey to create new session
-    setShowSurvey(true)
-  }
-
-  // Handle survey cancel
-  const handleSurveyCancel = () => {
-    setShowSurvey(false)
+    // Create new session directly without survey
+    try {
+      const session = await createSession(null, null, currentUser.id)
+      await loadSession(session.id)
+      setCurrentView('session')
+    } catch (err) {
+      console.error('Error creating session:', err)
+      alert('Failed to create session: ' + err.message)
+    }
   }
 
   // Handle rating form submission
@@ -556,6 +539,23 @@ function App() {
 
   const handleNavigateToProfile = () => {
     setCurrentView('profile')
+  }
+
+  // Handle admin login
+  const handleAdminLogin = () => {
+    setIsAdmin(true)
+    setCurrentView('adminDashboard')
+  }
+
+  // Handle admin logout
+  const handleAdminLogout = () => {
+    setIsAdmin(false)
+    setCurrentView('userSelection')
+  }
+
+  // Handle navigate to admin login
+  const handleNavigateToAdminLogin = () => {
+    setCurrentView('adminLogin')
   }
 
   // Handle session selection
@@ -779,13 +779,35 @@ function App() {
 
   // ========== VIEW RENDERS ==========
 
+  // Admin Login Page
+  if (currentView === 'adminLogin') {
+    return (
+      <div className="App user-selection-app">
+        <AdminLogin 
+          onLogin={handleAdminLogin}
+          onCancel={() => setCurrentView('userSelection')}
+        />
+      </div>
+    )
+  }
+
+  // Admin Dashboard
+  if (currentView === 'adminDashboard' && isAdmin) {
+    return (
+      <div className="App">
+        <AdminDashboard onLogout={handleAdminLogout} />
+      </div>
+    )
+  }
+
   // User Selection Page (First page)
-  if (currentView === 'userSelection' || (!currentUser && currentView !== 'createUser')) {
+  if (currentView === 'userSelection' || (!currentUser && currentView !== 'createUser' && !isAdmin)) {
     return (
       <div className="App user-selection-app">
         <UserSelection 
           onUserSelect={handleUserSelect}
           onCreateUser={handleCreateUser}
+          onAdminLogin={handleNavigateToAdminLogin}
         />
       </div>
     )
@@ -824,11 +846,6 @@ function App() {
             setCurrentAttempt(null)
           }}
           onUpdateUserStats={handleUpdateUserStats}
-        />
-        <SurveyModal 
-          isOpen={showSurvey} 
-          onClose={handleSurveyCancel}
-          onSubmit={handleSurveySubmit}
         />
         <div className="main-content-card">
           {/* Hero Section - Top 1/4 */}
@@ -1734,11 +1751,6 @@ function App() {
 
   return (
     <div className="App">
-      <SurveyModal 
-        isOpen={showSurvey} 
-        onClose={handleSurveyCancel}
-        onSubmit={handleSurveySubmit}
-      />
       <div className="loading">Loading...</div>
     </div>
   )
