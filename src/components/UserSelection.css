@@ -4,6 +4,9 @@
   align-items: center;
   justify-content: center;
   padding: 2rem;
+  width: 100%;
+  margin: 0;
+  box-sizing: border-box;
 }
 
 .user-selection-card {
@@ -13,10 +16,11 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  width: 100%;
-  max-width: 600px;
+  width: 70%;
+  max-width: 1200px;
   min-height: 80vh;
   position: relative;
+  margin: 0 auto;
 }
 
 .user-selection-card .hero-section {

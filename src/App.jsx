@@ -7,6 +7,7 @@ import SurveyModal from './components/SurveyModal'
 import Header from './components/Header'
 import UserSelection from './components/UserSelection'
 import CreateUserPage from './components/CreateUserPage'
+import ProfilePage from './components/ProfilePage'
 import { 
   createSession, 
   getAllSessions, 
@@ -35,7 +36,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/$
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null)
-  const [currentView, setCurrentView] = useState('userSelection') // 'userSelection', 'createUser', 'landing', 'sessionList', 'session', 'attempt', 'createAttempt'
+  const [currentView, setCurrentView] = useState('userSelection') // 'userSelection', 'createUser', 'landing', 'sessionList', 'session', 'attempt', 'createAttempt', 'profile'
   const [sessions, setSessions] = useState([])
   const [currentSession, setCurrentSession] = useState(null)
   const [currentAttempt, setCurrentAttempt] = useState(null)
@@ -447,6 +448,17 @@ function App() {
     }
   }
 
+  // Handle update user stats
+  const handleUpdateUserStats = async (userId, surveyData) => {
+    try {
+      const updatedUser = await updateUser(userId, { surveyData })
+      setCurrentUser(updatedUser)
+    } catch (err) {
+      console.error('Error updating user stats:', err)
+      throw err
+    }
+  }
+
   // Handle cancel create user
   const handleCancelCreateUser = () => {
     setCurrentView('userSelection')
@@ -540,6 +552,10 @@ function App() {
     setCurrentView('sessionList')
     setCurrentSession(null)
     setCurrentAttempt(null)
+  }
+
+  const handleNavigateToProfile = () => {
+    setCurrentView('profile')
   }
 
   // Handle session selection
@@ -766,7 +782,7 @@ function App() {
   // User Selection Page (First page)
   if (currentView === 'userSelection' || (!currentUser && currentView !== 'createUser')) {
     return (
-      <div className="App">
+      <div className="App user-selection-app">
         <UserSelection 
           onUserSelect={handleUserSelect}
           onCreateUser={handleCreateUser}
@@ -794,6 +810,7 @@ function App() {
         <Header 
           onNavigateHome={handleNavigateHome}
           onNavigateToSessions={handleNavigateToSessions}
+          onNavigateToProfile={handleNavigateToProfile}
           currentView={currentView}
           currentSession={currentSession}
           totalSessions={sessions.length}
@@ -806,6 +823,7 @@ function App() {
             setCurrentSession(null)
             setCurrentAttempt(null)
           }}
+          onUpdateUserStats={handleUpdateUserStats}
         />
         <SurveyModal 
           isOpen={showSurvey} 
@@ -853,13 +871,14 @@ function App() {
     )
   }
 
-  // Session List Page
-  if (currentView === 'sessionList') {
+  // Profile/Stats Page
+  if (currentView === 'profile') {
     return (
       <div className="App">
         <Header 
           onNavigateHome={handleNavigateHome}
           onNavigateToSessions={handleNavigateToSessions}
+          onNavigateToProfile={handleNavigateToProfile}
           currentView={currentView}
           currentSession={currentSession}
           totalSessions={sessions.length}
@@ -872,6 +891,36 @@ function App() {
             setCurrentSession(null)
             setCurrentAttempt(null)
           }}
+        />
+        <ProfilePage 
+          currentUser={currentUser}
+          onUpdateUserStats={handleUpdateUserStats}
+        />
+      </div>
+    )
+  }
+
+  // Session List Page
+  if (currentView === 'sessionList') {
+    return (
+      <div className="App">
+        <Header 
+          onNavigateHome={handleNavigateHome}
+          onNavigateToSessions={handleNavigateToSessions}
+          onNavigateToProfile={handleNavigateToProfile}
+          currentView={currentView}
+          currentSession={currentSession}
+          totalSessions={sessions.length}
+          sessions={sessions}
+          onSelectSession={handleSelectSession}
+          currentUser={currentUser}
+          onSwitchUser={() => {
+            setCurrentUser(null)
+            setCurrentView('userSelection')
+            setCurrentSession(null)
+            setCurrentAttempt(null)
+          }}
+          onUpdateUserStats={handleUpdateUserStats}
         />
         <div className="main-content-card">
           {/* Hero Section - Top 1/4 */}
@@ -948,6 +997,7 @@ function App() {
         <Header 
           onNavigateHome={handleNavigateHome}
           onNavigateToSessions={handleNavigateToSessions}
+          onNavigateToProfile={handleNavigateToProfile}
           currentView={currentView}
           currentSession={currentSession}
           totalSessions={sessions.length}
@@ -960,6 +1010,7 @@ function App() {
             setCurrentSession(null)
             setCurrentAttempt(null)
           }}
+          onUpdateUserStats={handleUpdateUserStats}
         />
         <div className="main-content-card">
           {/* Hero Section - Top 1/4 */}
@@ -1182,6 +1233,7 @@ function App() {
         <Header 
           onNavigateHome={handleNavigateHome}
           onNavigateToSessions={handleNavigateToSessions}
+          onNavigateToProfile={handleNavigateToProfile}
           currentView={currentView}
           currentSession={currentSession}
           totalSessions={sessions.length}
@@ -1194,6 +1246,7 @@ function App() {
             setCurrentSession(null)
             setCurrentAttempt(null)
           }}
+          onUpdateUserStats={handleUpdateUserStats}
         />
         {/* Rating Form Modal */}
         {showRatingForm && (

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import './Header.css'
 
-function Header({ onNavigateHome, onNavigateToSessions, currentView, currentSession, totalSessions, sessions = [], onSelectSession, currentUser, onSwitchUser }) {
+function Header({ onNavigateHome, onNavigateToSessions, onNavigateToProfile, currentView, currentSession, totalSessions, sessions = [], onSelectSession, currentUser, onSwitchUser }) {
   const [isExpanded, setIsExpanded] = useState(false)
   const INITIAL_DISPLAY_COUNT = 3
   
@@ -11,6 +11,13 @@ function Header({ onNavigateHome, onNavigateToSessions, currentView, currentSess
   return (
     <aside className="app-sidebar">
       <nav className="sidebar-nav">
+        {currentUser && (
+          <div className="context-user">
+            <span className="welcome-message">
+              Welcome back, {currentUser.name} 😊
+            </span>
+          </div>
+        )}
         <button 
           className={`sidebar-link ${currentView === 'landing' ? 'active' : ''}`}
           onClick={onNavigateHome}
@@ -47,14 +54,19 @@ function Header({ onNavigateHome, onNavigateToSessions, currentView, currentSess
       </nav>
 
       <div className="sidebar-context">
+        {currentUser?.surveyData && (
+          <button 
+            className={`sidebar-link ${currentView === 'profile' ? 'active' : ''}`}
+            onClick={onNavigateToProfile}
+            style={{ marginBottom: '1rem' }}
+          >
+            My Stats
+          </button>
+        )}
         {currentUser && (
-          <div className="context-user">
-            <span className="context-label">Current User:</span>
-            <span className="context-value">{currentUser.name}</span>
-            <button className="switch-user-button" onClick={onSwitchUser}>
-              Switch User
-            </button>
-          </div>
+          <button className="switch-user-button" onClick={onSwitchUser}>
+            Switch User
+          </button>
         )}
         {totalSessions !== undefined && totalSessions > 0 && (
           <div className="context-stats">

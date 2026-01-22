@@ -7,9 +7,21 @@
   overflow: hidden;
 }
 
+.App.user-selection-app {
+  padding: 0;
+  max-width: 100%;
+  margin: 0;
+  height: auto;
+  overflow: visible;
+}
+
 @media (max-width: 768px) {
   .App {
     padding-left: calc(1rem + 200px); /* Account for smaller sidebar on mobile */
+  }
+  
+  .App.user-selection-app {
+    padding: 0;
   }
 }
 
