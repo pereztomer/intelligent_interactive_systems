@@ -67,11 +67,35 @@
 
 .context-session,
 .context-stats,
-.context-sessions {
+.context-sessions,
+.context-user {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
   font-size: 0.875rem;
+}
+
+.context-user {
+  margin-bottom: 0.5rem;
+}
+
+.switch-user-button {
+  margin-top: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: rgba(30, 58, 95, 0.1);
+  color: var(--navy-primary, #1e3a5f);
+  border: 1px solid rgba(30, 58, 95, 0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.switch-user-button:hover {
+  background: rgba(30, 58, 95, 0.15);
+  border-color: var(--navy-primary, #1e3a5f);
 }
 
 .context-label {

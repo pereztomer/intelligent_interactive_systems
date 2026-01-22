@@ -5,6 +5,8 @@ import 'react-pdf/dist/esm/Page/TextLayer.css'
 import './App.css'
 import SurveyModal from './components/SurveyModal'
 import Header from './components/Header'
+import UserSelection from './components/UserSelection'
+import CreateUserPage from './components/CreateUserPage'
 import { 
   createSession, 
   getAllSessions, 
@@ -15,6 +17,7 @@ import {
   updateAttempt,
   deleteAttempt
 } from './utils/recordingStorage'
+import { createUser, updateUser } from './utils/userStorage'
 import {
   checkBackendAvailable,
   saveRecording as saveRecordingToBackend,
@@ -31,7 +34,8 @@ import { formatTime, formatDate } from './utils/formatting'
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`
 
 function App() {
-  const [currentView, setCurrentView] = useState('landing') // 'landing', 'sessionList', 'session', 'attempt', 'createAttempt'
+  const [currentUser, setCurrentUser] = useState(null)
+  const [currentView, setCurrentView] = useState('userSelection') // 'userSelection', 'createUser', 'landing', 'sessionList', 'session', 'attempt', 'createAttempt'
   const [sessions, setSessions] = useState([])
   const [currentSession, setCurrentSession] = useState(null)
   const [currentAttempt, setCurrentAttempt] = useState(null)
@@ -72,10 +76,10 @@ function App() {
 
   // Load sessions on mount
   useEffect(() => {
-    if (currentView === 'sessionList' || currentView === 'landing') {
+    if (currentUser && (currentView === 'sessionList' || currentView === 'landing')) {
       loadSessions()
     }
-  }, [currentView])
+  }, [currentView, currentUser])
 
   // Load Pyodide for analysis
   useEffect(() => {
@@ -119,7 +123,8 @@ function App() {
 
   const loadSessions = async () => {
     try {
-      const allSessions = await getAllSessions()
+      if (!currentUser) return
+      const allSessions = await getAllSessions(currentUser.id)
       setSessions(allSessions)
     } catch (err) {
       console.error('Error loading sessions:', err)
@@ -417,17 +422,46 @@ function App() {
     }
   }, [])
 
-  // Handle new session creation
-  const handleNewSession = async () => {
-    setShowSurvey(true)
+  // Handle user selection
+  const handleUserSelect = async (user) => {
+    setCurrentUser(user)
+    await updateUser(user.id, { lastActive: Date.now() })
+    setCurrentView('landing')
   }
 
-  // Handle survey submission
+  // Handle create new user
+  const handleCreateUser = () => {
+    setCurrentView('createUser')
+  }
+
+  // Handle create user form submission
+  const handleCreateUserSubmit = async (userName, surveyData) => {
+    try {
+      const user = await createUser(userName || null, surveyData)
+      setCurrentUser(user)
+      // Go to landing page instead of creating session immediately
+      setCurrentView('landing')
+    } catch (err) {
+      console.error('Error creating user:', err)
+      alert('Failed to create user: ' + err.message)
+    }
+  }
+
+  // Handle cancel create user
+  const handleCancelCreateUser = () => {
+    setCurrentView('userSelection')
+  }
+
+  // Handle survey submission (for existing users creating new session)
   const handleSurveySubmit = async (surveyData) => {
     try {
-      const sessionName = prompt('Enter a name for your session (or leave blank for default):')
-      // Don't cancel if user presses cancel on prompt - just use default name
-      const session = await createSession(sessionName || null, surveyData)
+      if (!currentUser) {
+        setCurrentView('userSelection')
+        return
+      }
+      
+      // Existing user creating new session - no prompt, just create with default name
+      const session = await createSession(null, surveyData, currentUser.id)
       await loadSession(session.id)
       setShowSurvey(false)
       setCurrentView('session')
@@ -436,6 +470,16 @@ function App() {
       alert('Failed to create session: ' + err.message)
       setShowSurvey(false)
     }
+  }
+
+  // Handle new session creation (for existing users)
+  const handleNewSession = async () => {
+    if (!currentUser) {
+      setCurrentView('userSelection')
+      return
+    }
+    // For existing users, show survey to create new session
+    setShowSurvey(true)
   }
 
   // Handle survey cancel
@@ -482,9 +526,13 @@ function App() {
 
   // Handle navigation to home
   const handleNavigateHome = () => {
-    setCurrentView('landing')
-    setCurrentSession(null)
-    setCurrentAttempt(null)
+    if (!currentUser) {
+      setCurrentView('userSelection')
+    } else {
+      setCurrentView('landing')
+      setCurrentSession(null)
+      setCurrentAttempt(null)
+    }
   }
 
   // Handle navigation to sessions list
@@ -715,6 +763,30 @@ function App() {
 
   // ========== VIEW RENDERS ==========
 
+  // User Selection Page (First page)
+  if (currentView === 'userSelection' || (!currentUser && currentView !== 'createUser')) {
+    return (
+      <div className="App">
+        <UserSelection 
+          onUserSelect={handleUserSelect}
+          onCreateUser={handleCreateUser}
+        />
+      </div>
+    )
+  }
+
+  // Create User Page
+  if (currentView === 'createUser') {
+    return (
+      <div className="App">
+        <CreateUserPage
+          onSubmit={handleCreateUserSubmit}
+          onCancel={handleCancelCreateUser}
+        />
+      </div>
+    )
+  }
+
   // Landing Page
   if (currentView === 'landing') {
     return (
@@ -727,6 +799,13 @@ function App() {
           totalSessions={sessions.length}
           sessions={sessions}
           onSelectSession={handleSelectSession}
+          currentUser={currentUser}
+          onSwitchUser={() => {
+            setCurrentUser(null)
+            setCurrentView('userSelection')
+            setCurrentSession(null)
+            setCurrentAttempt(null)
+          }}
         />
         <SurveyModal 
           isOpen={showSurvey} 
@@ -786,6 +865,13 @@ function App() {
           totalSessions={sessions.length}
           sessions={sessions}
           onSelectSession={handleSelectSession}
+          currentUser={currentUser}
+          onSwitchUser={() => {
+            setCurrentUser(null)
+            setCurrentView('userSelection')
+            setCurrentSession(null)
+            setCurrentAttempt(null)
+          }}
         />
         <div className="main-content-card">
           {/* Hero Section - Top 1/4 */}
@@ -867,6 +953,13 @@ function App() {
           totalSessions={sessions.length}
           sessions={sessions}
           onSelectSession={handleSelectSession}
+          currentUser={currentUser}
+          onSwitchUser={() => {
+            setCurrentUser(null)
+            setCurrentView('userSelection')
+            setCurrentSession(null)
+            setCurrentAttempt(null)
+          }}
         />
         <div className="main-content-card">
           {/* Hero Section - Top 1/4 */}
@@ -1094,6 +1187,13 @@ function App() {
           totalSessions={sessions.length}
           sessions={sessions}
           onSelectSession={handleSelectSession}
+          currentUser={currentUser}
+          onSwitchUser={() => {
+            setCurrentUser(null)
+            setCurrentView('userSelection')
+            setCurrentSession(null)
+            setCurrentAttempt(null)
+          }}
         />
         {/* Rating Form Modal */}
         {showRatingForm && (
@@ -1256,74 +1356,65 @@ function App() {
           <div className="hero-section">
             <img src="/hero-image.png" alt="Hero" className="hero-image" />
             <h1 className="hero-title">Presentation Rehearsal Coach</h1>
+            
+            {/* Attempt Header Overlay */}
+            {(currentSession || currentAttempt) && (
+              <div className="attempt-header-overlay">
+                <h2>
+                  {currentSession?.name || 'Session'}
+                  {attemptNumber && ` - Attempt ${attemptNumber}`}
+                </h2>
+                <div className="attempt-actions-overlay">
+                  {currentAttempt && (
+                    <>
+                      <button
+                        className="analyze-button"
+                        onClick={async () => {
+                          if (currentAttempt && currentAttempt.id) {
+                            await handleAnalyzeAttempt(currentAttempt.id)
+                          }
+                        }}
+                        disabled={analyzing[currentAttempt?.id] || !pyodide}
+                      >
+                        {!pyodide ? 'Loading Python...' : analyzing[currentAttempt?.id] ? 'Analyzing...' : '📊 Analyze Attempt'}
+                      </button>
+                      <button
+                        className="analyze-button secondary"
+                        onClick={async () => {
+                          if (currentAttempt && currentAttempt.id) {
+                            await handleGenerateAIFeedback(currentAttempt.id)
+                          }
+                        }}
+                        disabled={analyzing[`ai_${currentAttempt?.id}`] || !currentAttempt.audioPath}
+                        title={!currentAttempt.audioPath ? 'Run full Analysis first' : 'Generate AI feedback using Gemini'}
+                      >
+                        {analyzing[`ai_${currentAttempt?.id}`] ? '⏳ Generating...' : '🤖 AI Feedback'}
+                      </button>
+                    </>
+                  )}
+                  <button 
+                    className="back-button"
+                    onClick={async () => {
+                      if (currentSession) {
+                        await loadSession(currentSession.id)
+                        setCurrentView('session')
+                      } else {
+                        setCurrentView('sessionList')
+                      }
+                      setFile(null)
+                      setCurrentAttempt(null)
+                    }}
+                  >
+                    ← Back to Session
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
           
           {/* Page Content - Bottom 3/4 */}
           <div className="page-content">
             <div className="presentation-viewer">
-          {/* Header bar with session name, attempt number, and back button */}
-          {(currentSession || currentAttempt) && (
-            <div className="session-header">
-              <h2>
-                {currentSession?.name || 'Session'}
-                {attemptNumber && ` - Attempt ${attemptNumber}`}
-              </h2>
-              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                {currentAttempt && (
-                  <>
-                    <button
-                      className="analyze-button"
-                      onClick={async () => {
-                        if (currentAttempt && currentAttempt.id) {
-                          await handleAnalyzeAttempt(currentAttempt.id)
-                        }
-                      }}
-                      disabled={analyzing[currentAttempt?.id] || !pyodide}
-                      style={{ 
-                        padding: '0.75rem 1.5rem', 
-                        fontSize: '1rem',
-                        fontWeight: 600
-                      }}
-                    >
-                      {!pyodide ? 'Loading Python...' : analyzing[currentAttempt?.id] ? 'Analyzing...' : '📊 Analyze Attempt'}
-                    </button>
-                    <button
-                      className="analyze-button secondary"
-                      onClick={async () => {
-                        if (currentAttempt && currentAttempt.id) {
-                          await handleGenerateAIFeedback(currentAttempt.id)
-                        }
-                      }}
-                      disabled={analyzing[`ai_${currentAttempt?.id}`] || !currentAttempt.audioPath}
-                      title={!currentAttempt.audioPath ? 'Run full Analysis first' : 'Generate AI feedback using Gemini'}
-                      style={{ 
-                        padding: '0.75rem 1.5rem', 
-                        fontSize: '1rem',
-                        fontWeight: 600
-                      }}
-                    >
-                      {analyzing[`ai_${currentAttempt?.id}`] ? '⏳ Generating...' : '🤖 AI Feedback'}
-                    </button>
-                  </>
-                )}
-                <button 
-                  className="back-button"
-                  onClick={async () => {
-                    if (currentSession) {
-                      await loadSession(currentSession.id)
-                      setCurrentView('session')
-                    } else {
-                      setCurrentView('sessionList')
-                    }
-                    setFile(null)
-                    setCurrentAttempt(null)
-                  }}
-                >
-                  ← Back to Session
-                </button>
-              </div>
-            </div>
-          )}
 
           {!currentAttempt && (
             <>

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import './Header.css'
 
-function Header({ onNavigateHome, onNavigateToSessions, currentView, currentSession, totalSessions, sessions = [], onSelectSession }) {
+function Header({ onNavigateHome, onNavigateToSessions, currentView, currentSession, totalSessions, sessions = [], onSelectSession, currentUser, onSwitchUser }) {
   const [isExpanded, setIsExpanded] = useState(false)
   const INITIAL_DISPLAY_COUNT = 3
   
@@ -47,6 +47,15 @@ function Header({ onNavigateHome, onNavigateToSessions, currentView, currentSess
       </nav>
 
       <div className="sidebar-context">
+        {currentUser && (
+          <div className="context-user">
+            <span className="context-label">Current User:</span>
+            <span className="context-value">{currentUser.name}</span>
+            <button className="switch-user-button" onClick={onSwitchUser}>
+              Switch User
+            </button>
+          </div>
+        )}
         {totalSessions !== undefined && totalSessions > 0 && (
           <div className="context-stats">
             <span className="context-label">Total Sessions:</span>

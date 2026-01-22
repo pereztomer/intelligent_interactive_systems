@@ -947,10 +947,90 @@
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
 }
 
+/* Attempt Header Overlay */
+.attempt-header-overlay {
+  position: absolute;
+  bottom: 1rem;
+  left: 2rem;
+  right: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 20;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.attempt-header-overlay h2 {
+  margin: 0;
+  font-size: 2rem;
+  color: white;
+  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7);
+  font-weight: 700;
+}
+
+.attempt-actions-overlay {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.attempt-actions-overlay .analyze-button {
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--navy-primary, #1e3a5f);
+  border: none;
+  padding: 0.8rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.25s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.attempt-actions-overlay .analyze-button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.95);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.attempt-actions-overlay .analyze-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.attempt-actions-overlay .analyze-button.secondary {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.attempt-actions-overlay .back-button {
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--navy-primary, #1e3a5f);
+  border: none;
+  padding: 0.8rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.25s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.attempt-actions-overlay .back-button:hover {
+  background: rgba(255, 255, 255, 0.95);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
 /* Hide old session header and actions in page-content */
 .session-page .session-header,
 .session-page .session-feedback-section,
 .session-page .session-actions-bar {
+  display: none;
+}
+
+.presentation-viewer .session-header {
   display: none;
 }
 
