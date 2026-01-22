@@ -3,7 +3,7 @@ import { getAllUsers } from '../utils/userStorage'
 import { getAllSessions } from '../utils/recordingStorage'
 import './AdminDashboard.css'
 
-function AdminDashboard({ onLogout }) {
+function AdminDashboard({ onLogout, onSelectSession, onSelectAttempt }) {
   const [users, setUsers] = useState([])
   const [allSessions, setAllSessions] = useState([])
   const [selectedUser, setSelectedUser] = useState(null)
@@ -196,7 +196,7 @@ function AdminDashboard({ onLogout }) {
                             <h4>Sessions</h4>
                             <div className="sessions-list">
                               {userSessions.map((session) => (
-                                <div key={session.id} className="session-item">
+                                <div key={session.id} className="session-item clickable" onClick={() => onSelectSession && onSelectSession(session.id)}>
                                   <div className="session-info">
                                     <strong>{session.name}</strong>
                                     <span className="session-meta">
@@ -207,7 +207,16 @@ function AdminDashboard({ onLogout }) {
                                   {session.attempts && session.attempts.length > 0 && (
                                     <div className="attempts-list">
                                       {session.attempts.map((attempt, idx) => (
-                                        <div key={attempt.id} className="attempt-item">
+                                        <div 
+                                          key={attempt.id} 
+                                          className="attempt-item clickable" 
+                                          onClick={(e) => {
+                                            e.stopPropagation()
+                                            if (onSelectAttempt) {
+                                              onSelectAttempt(session.id, attempt.id)
+                                            }
+                                          }}
+                                        >
                                           <span>Attempt {idx + 1}</span>
                                           <span>{new Date(attempt.timestamp).toLocaleString()}</span>
                                           {attempt.duration && (
@@ -235,7 +244,7 @@ function AdminDashboard({ onLogout }) {
                   {allSessions.map((session) => {
                     const user = users.find(u => u.id === session.userId)
                     return (
-                      <div key={session.id} className="admin-session-card">
+                      <div key={session.id} className="admin-session-card clickable" onClick={() => onSelectSession && onSelectSession(session.id)}>
                         <div className="admin-session-header">
                           <h3>{session.name}</h3>
                           <div className="admin-session-meta">
@@ -248,7 +257,16 @@ function AdminDashboard({ onLogout }) {
                           <div className="admin-session-attempts">
                             <h4>Attempts</h4>
                             {session.attempts.map((attempt, idx) => (
-                              <div key={attempt.id} className="admin-attempt-item">
+                              <div 
+                                key={attempt.id} 
+                                className="admin-attempt-item clickable"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  if (onSelectAttempt) {
+                                    onSelectAttempt(session.id, attempt.id)
+                                  }
+                                }}
+                              >
                                 <div className="attempt-header">
                                   <strong>Attempt {idx + 1}</strong>
                                   <span>{new Date(attempt.timestamp).toLocaleString()}</span>

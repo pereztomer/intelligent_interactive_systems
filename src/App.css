@@ -849,6 +849,34 @@
 }
 
 /* Session Detail Page Overlays */
+/* Admin Back Button Overlay - Top Right */
+.admin-back-overlay {
+  position: absolute;
+  top: 1.5rem;
+  right: 2rem;
+  z-index: 25;
+}
+
+.admin-back-button {
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--navy-primary, #1e3a5f);
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  padding: 0.7rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.25s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  font-family: inherit;
+}
+
+.admin-back-button:hover {
+  background: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
 .session-header-overlay {
   position: absolute;
   bottom: 5rem;

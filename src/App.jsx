@@ -564,6 +564,22 @@ function App() {
     setCurrentView('session')
   }
 
+  // Handle attempt selection (for admin - takes sessionId and attemptId)
+  const handleAdminSelectAttempt = async (sessionId, attemptId) => {
+    const session = await getSession(sessionId)
+    if (session) {
+      setCurrentSession(session)
+      const attempt = session.attempts?.find(a => a.id === attemptId)
+      if (attempt) {
+        setCurrentAttempt(attempt)
+        if (attempt.pdfData) {
+          await loadPDFFromData(attempt.pdfData, attempt.fileName)
+        }
+        setCurrentView('attempt')
+      }
+    }
+  }
+
   // Handle new attempt creation
   const handleNewAttempt = async (usePreviousPDF = false) => {
     if (!currentSession) return
@@ -795,7 +811,11 @@ function App() {
   if (currentView === 'adminDashboard' && isAdmin) {
     return (
       <div className="App">
-        <AdminDashboard onLogout={handleAdminLogout} />
+        <AdminDashboard 
+          onLogout={handleAdminLogout}
+          onSelectSession={handleSelectSession}
+          onSelectAttempt={handleAdminSelectAttempt}
+        />
       </div>
     )
   }
@@ -1007,8 +1027,8 @@ function App() {
     )
   }
 
-  // Session Detail Page
-  if (currentView === 'session' && currentSession) {
+  // Session Detail Page (for regular users and admin)
+  if (currentView === 'session' && currentSession && (currentUser || isAdmin)) {
     return (
       <div className="App">
         <Header 
@@ -1022,8 +1042,13 @@ function App() {
           onSelectSession={handleSelectSession}
           currentUser={currentUser}
           onSwitchUser={() => {
-            setCurrentUser(null)
-            setCurrentView('userSelection')
+            if (isAdmin) {
+              setIsAdmin(false)
+              setCurrentView('adminDashboard')
+            } else {
+              setCurrentUser(null)
+              setCurrentView('userSelection')
+            }
             setCurrentSession(null)
             setCurrentAttempt(null)
           }}
@@ -1034,6 +1059,22 @@ function App() {
           <div className="hero-section">
             <img src="/hero-image.png" alt="Hero" className="hero-image" />
             <h1 className="hero-title">Presentation Rehearsal Coach</h1>
+            
+            {/* Admin Back Button Overlay - Top Right */}
+            {isAdmin && (
+              <div className="admin-back-overlay">
+                <button 
+                  className="admin-back-button"
+                  onClick={() => {
+                    setCurrentView('adminDashboard')
+                    setCurrentSession(null)
+                    setCurrentAttempt(null)
+                  }}
+                >
+                  ← Back to Admin Dashboard
+                </button>
+              </div>
+            )}
             
             {/* Session Header Overlay */}
             <div className="session-header-overlay">
@@ -1234,8 +1275,8 @@ function App() {
     )
   }
 
-  // Attempt Viewer Page (PDF + Recording)
-  if (currentView === 'attempt') {
+  // Attempt Viewer Page (PDF + Recording) - for regular users and admin
+  if (currentView === 'attempt' && currentAttempt && currentSession && (currentUser || isAdmin)) {
     // Get attempt number if viewing a previous attempt
     let attemptNumber = null
     if (currentAttempt && currentSession && currentSession.attempts) {
@@ -1258,8 +1299,13 @@ function App() {
           onSelectSession={handleSelectSession}
           currentUser={currentUser}
           onSwitchUser={() => {
-            setCurrentUser(null)
-            setCurrentView('userSelection')
+            if (isAdmin) {
+              setIsAdmin(false)
+              setCurrentView('adminDashboard')
+            } else {
+              setCurrentUser(null)
+              setCurrentView('userSelection')
+            }
             setCurrentSession(null)
             setCurrentAttempt(null)
           }}
@@ -1426,6 +1472,22 @@ function App() {
           <div className="hero-section">
             <img src="/hero-image.png" alt="Hero" className="hero-image" />
             <h1 className="hero-title">Presentation Rehearsal Coach</h1>
+            
+            {/* Admin Back Button Overlay - Top Right */}
+            {isAdmin && (
+              <div className="admin-back-overlay">
+                <button 
+                  className="admin-back-button"
+                  onClick={() => {
+                    setCurrentView('adminDashboard')
+                    setCurrentSession(null)
+                    setCurrentAttempt(null)
+                  }}
+                >
+                  ← Back to Admin Dashboard
+                </button>
+              </div>
+            )}
             
             {/* Attempt Header Overlay */}
             {(currentSession || currentAttempt) && (
