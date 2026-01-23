@@ -180,9 +180,11 @@ function App() {
       const file = new File([blob], fileName || 'presentation.pdf', { type: 'application/pdf' })
       setFile(file)
       setPageNumber(1)
+      setLoading(false)
       return true
     } catch (err) {
       setError('Failed to load PDF')
+      setLoading(false)
       return false
     }
   }
@@ -1276,7 +1278,8 @@ function App() {
   }
 
   // Attempt Viewer Page (PDF + Recording) - for regular users and admin
-  if (currentView === 'attempt' && currentAttempt && currentSession && (currentUser || isAdmin)) {
+  // Allow rendering if we have a file (new attempt) OR currentAttempt (existing attempt)
+  if (currentView === 'attempt' && currentSession && (currentUser || isAdmin) && (file || currentAttempt)) {
     // Get attempt number if viewing a previous attempt
     let attemptNumber = null
     if (currentAttempt && currentSession && currentSession.attempts) {
