@@ -78,6 +78,9 @@ function App() {
   // Analysis state
   const [pyodide, setPyodide] = useState(null)
   const [analyzing, setAnalyzing] = useState({})
+  
+  // Session popup state
+  const [activePopup, setActivePopup] = useState(null) // 'feedback', 'diagram', 'attempts'
 
   // Load sessions on mount
   useEffect(() => {
@@ -1245,110 +1248,297 @@ function App() {
           {/* Page Content - Bottom 3/4 */}
           <div className="page-content">
             <div className="session-page">
-              {/* Session Feedback Box (if exists) */}
-              {currentSession.processFeedback && (
-                <div className="session-feedback-box">
-                  <h3>Session Process Feedback</h3>
-                  <div className="session-feedback-content">
-                    {currentSession.processFeedback.split(/(?=\d+\.\s)/).filter(line => line.trim()).map((line, idx) => (
-                      <p key={idx}>{line.trim()}</p>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Session Progress Diagram */}
-              {currentSession.attempts && currentSession.attempts.length > 0 && (
-                <SessionDiagram attempts={currentSession.attempts} />
-              )}
-
-          {currentSession.attempts && currentSession.attempts.length > 0 ? (
-            <div className="attempts-list">
-              <h3>Attempts ({currentSession.attempts.length})</h3>
-              {currentSession.attempts.map((attempt) => (
-                <div
-                  key={attempt.id}
-                  className="attempt-item"
-                  onClick={() => handleSelectAttempt(attempt)}
+              {/* Three Main Cards */}
+              <div className="session-cards-container" style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: '2rem',
+                padding: '2rem',
+                maxWidth: '1200px',
+                margin: '0 auto'
+              }}>
+                {/* Card 1: Session Feedback */}
+                <div 
+                  className="session-card"
+                  onClick={() => setActivePopup('feedback')}
+                  style={{
+                    backgroundColor: '#f8f9fa',
+                    border: '2px solid #dee2e6',
+                    borderRadius: '12px',
+                    padding: '2rem',
+                    cursor: currentSession.processFeedback ? 'pointer' : 'not-allowed',
+                    opacity: currentSession.processFeedback ? 1 : 0.5,
+                    transition: 'transform 0.2s, box-shadow 0.2s',
+                    textAlign: 'center',
+                    minHeight: '200px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (currentSession.processFeedback) {
+                      e.currentTarget.style.transform = 'translateY(-5px)'
+                      e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.15)'
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)'
+                    e.currentTarget.style.boxShadow = 'none'
+                  }}
                 >
-                  <div className="attempt-info">
-                    <h4>Attempt {currentSession.attempts.indexOf(attempt) + 1}</h4>
-                    <p className="attempt-meta">
-                      {formatDate(attempt.timestamp)} • {formatTime(attempt.duration || 0)}
-                    </p>
-                    <p className="attempt-file">{attempt.fileName || 'Presentation'}</p>
-                    {(attempt.geminiFeedback || attempt.analysisResults) && (
-                      <p className="feedback-preview">📊 Feedback Available</p>
-                    )}
-                  </div>
-                  <div className="attempt-actions">
-                    <button
-                      className="analyze-button"
-                      onClick={async (e) => {
-                        e.stopPropagation()
-                        await handleAnalyzeAttempt(attempt.id)
+                  <div style={{ fontSize: '48px', marginBottom: '1rem' }}>📝</div>
+                  <h3 style={{ margin: '0 0 0.5rem 0' }}>Session Feedback</h3>
+                  <p style={{ color: '#666', fontSize: '14px' }}>
+                    {currentSession.processFeedback ? 'Click to view feedback' : 'No feedback yet'}
+                  </p>
+                </div>
+
+                {/* Card 2: Improvement Diagram */}
+                <div 
+                  className="session-card"
+                  onClick={() => currentSession.attempts?.length > 0 && setActivePopup('diagram')}
+                  style={{
+                    backgroundColor: '#f8f9fa',
+                    border: '2px solid #dee2e6',
+                    borderRadius: '12px',
+                    padding: '2rem',
+                    cursor: currentSession.attempts?.length > 0 ? 'pointer' : 'not-allowed',
+                    opacity: currentSession.attempts?.length > 0 ? 1 : 0.5,
+                    transition: 'transform 0.2s, box-shadow 0.2s',
+                    textAlign: 'center',
+                    minHeight: '200px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (currentSession.attempts?.length > 0) {
+                      e.currentTarget.style.transform = 'translateY(-5px)'
+                      e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.15)'
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)'
+                    e.currentTarget.style.boxShadow = 'none'
+                  }}
+                >
+                  <div style={{ fontSize: '48px', marginBottom: '1rem' }}>📊</div>
+                  <h3 style={{ margin: '0 0 0.5rem 0' }}>Improvement Timeline</h3>
+                  <p style={{ color: '#666', fontSize: '14px' }}>
+                    {currentSession.attempts?.length > 0 ? 'Click to view progress' : 'No attempts yet'}
+                  </p>
+                </div>
+
+                {/* Card 3: Attempts */}
+                <div 
+                  className="session-card"
+                  onClick={() => setActivePopup('attempts')}
+                  style={{
+                    backgroundColor: '#f8f9fa',
+                    border: '2px solid #dee2e6',
+                    borderRadius: '12px',
+                    padding: '2rem',
+                    cursor: 'pointer',
+                    transition: 'transform 0.2s, box-shadow 0.2s',
+                    textAlign: 'center',
+                    minHeight: '200px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-5px)'
+                    e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.15)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)'
+                    e.currentTarget.style.boxShadow = 'none'
+                  }}
+                >
+                  <div style={{ fontSize: '48px', marginBottom: '1rem' }}>🎯</div>
+                  <h3 style={{ margin: '0 0 0.5rem 0' }}>View Attempts</h3>
+                  <p style={{ color: '#666', fontSize: '14px' }}>
+                    {currentSession.attempts?.length || 0} attempt(s)
+                  </p>
+                </div>
+              </div>
+
+              {/* Popup: Session Feedback */}
+              {activePopup === 'feedback' && currentSession.processFeedback && (
+                <div className="survey-overlay" onClick={() => setActivePopup(null)} style={{ zIndex: 1000 }}>
+                  <div className="survey-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '800px', maxHeight: '80vh', overflow: 'auto' }}>
+                    <button 
+                      onClick={() => setActivePopup(null)}
+                      style={{
+                        position: 'absolute',
+                        top: '20px',
+                        right: '20px',
+                        background: 'none',
+                        border: 'none',
+                        fontSize: '32px',
+                        cursor: 'pointer',
+                        color: '#666',
+                        lineHeight: '1'
                       }}
-                      disabled={analyzing[attempt.id] || !pyodide}
                     >
-                      {!pyodide ? '⏳ Loading Python...' : analyzing[attempt.id] ? '⏳ Analyzing...' : '📊 Analyze'}
+                      ×
                     </button>
-                    <button
-                      className="analyze-button secondary"
-                      onClick={async (e) => {
-                        e.stopPropagation()
-                        await handleGenerateAIFeedback(attempt.id)
-                      }}
-                      disabled={analyzing[`ai_${attempt.id}`] || !attempt.audioPath}
-                      title={!attempt.audioPath ? 'Run full Analysis first' : 'Generate AI feedback using Gemini'}
-                    >
-                      {analyzing[`ai_${attempt.id}`] ? '⏳ Generating...' : '🤖 AI Feedback'}
-                    </button>
-                    {(attempt.geminiFeedback || attempt.analysisResults) && (
-                      <button
-                        className="analyze-button"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleSelectAttempt(attempt)
-                        }}
-                      >
-                        👁️ View Feedback
-                      </button>
-                    )}
-                    <button
-                      className="analyze-button secondary"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleExportRecording(attempt)
-                      }}
-                      title="Export recording for backend analysis"
-                    >
-                      💾 Export
-                    </button>
-                    <button
-                      className="delete-button"
-                      onClick={async (e) => {
-                        e.stopPropagation()
-                        if (confirm('Are you sure you want to delete this attempt?')) {
-                          try {
-                            await deleteAttempt(attempt.id)
-                            await loadSession(currentSession.id)
-                          } catch (err) {
-                            alert('Error deleting attempt')
-                          }
-                        }
-                      }}
-                    >
-                      🗑️
-                    </button>
+                    <div className="session-feedback-box" style={{ margin: 0 }}>
+                      <h3>Session Process Feedback</h3>
+                      <div className="session-feedback-content">
+                        {currentSession.processFeedback.split(/(?=\d+\.\s)/).filter(line => line.trim()).map((line, idx) => (
+                          <p key={idx}>{line.trim()}</p>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="no-attempts">
-              <p>No attempts yet. Create your first attempt to start practicing!</p>
-            </div>
-          )}
+              )}
+
+              {/* Popup: Improvement Diagram */}
+              {activePopup === 'diagram' && currentSession.attempts?.length > 0 && (
+                <div className="survey-overlay" onClick={() => setActivePopup(null)} style={{ zIndex: 1000 }}>
+                  <div className="survey-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '1000px', maxHeight: '80vh', overflow: 'auto' }}>
+                    <button 
+                      onClick={() => setActivePopup(null)}
+                      style={{
+                        position: 'absolute',
+                        top: '20px',
+                        right: '20px',
+                        background: 'none',
+                        border: 'none',
+                        fontSize: '32px',
+                        cursor: 'pointer',
+                        color: '#666',
+                        lineHeight: '1',
+                        zIndex: 10
+                      }}
+                    >
+                      ×
+                    </button>
+                    <SessionDiagram attempts={currentSession.attempts} />
+                  </div>
+                </div>
+              )}
+
+              {/* Popup: Attempts List */}
+              {activePopup === 'attempts' && (
+                <div className="survey-overlay" onClick={() => setActivePopup(null)} style={{ zIndex: 1000 }}>
+                  <div className="survey-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '900px', maxHeight: '80vh', overflow: 'auto' }}>
+                    <button 
+                      onClick={() => setActivePopup(null)}
+                      style={{
+                        position: 'absolute',
+                        top: '20px',
+                        right: '20px',
+                        background: 'none',
+                        border: 'none',
+                        fontSize: '32px',
+                        cursor: 'pointer',
+                        color: '#666',
+                        lineHeight: '1',
+                        zIndex: 10
+                      }}
+                    >
+                      ×
+                    </button>
+                    {currentSession.attempts && currentSession.attempts.length > 0 ? (
+                      <div className="attempts-list" style={{ margin: 0 }}>
+                        <h3>Attempts ({currentSession.attempts.length})</h3>
+                        {currentSession.attempts.map((attempt) => (
+                          <div
+                            key={attempt.id}
+                            className="attempt-item"
+                            onClick={() => {
+                              setActivePopup(null)
+                              handleSelectAttempt(attempt)
+                            }}
+                          >
+                            <div className="attempt-info">
+                              <h4>Attempt {currentSession.attempts.indexOf(attempt) + 1}</h4>
+                              <p className="attempt-meta">
+                                {formatDate(attempt.timestamp)} • {formatTime(attempt.duration || 0)}
+                              </p>
+                              <p className="attempt-file">{attempt.fileName || 'Presentation'}</p>
+                              {(attempt.geminiFeedback || attempt.analysisResults) && (
+                                <p className="feedback-preview">📊 Feedback Available</p>
+                              )}
+                            </div>
+                            <div className="attempt-actions">
+                              <button
+                                className="analyze-button"
+                                onClick={async (e) => {
+                                  e.stopPropagation()
+                                  await handleAnalyzeAttempt(attempt.id)
+                                }}
+                                disabled={analyzing[attempt.id] || !pyodide}
+                              >
+                                {!pyodide ? '⏳ Loading Python...' : analyzing[attempt.id] ? '⏳ Analyzing...' : '📊 Analyze'}
+                              </button>
+                              <button
+                                className="analyze-button secondary"
+                                onClick={async (e) => {
+                                  e.stopPropagation()
+                                  await handleGenerateAIFeedback(attempt.id)
+                                }}
+                                disabled={analyzing[`ai_${attempt.id}`] || !attempt.audioPath}
+                                title={!attempt.audioPath ? 'Run full Analysis first' : 'Generate AI feedback using Gemini'}
+                              >
+                                {analyzing[`ai_${attempt.id}`] ? '⏳ Generating...' : '🤖 AI Feedback'}
+                              </button>
+                              {(attempt.geminiFeedback || attempt.analysisResults) && (
+                                <button
+                                  className="analyze-button"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setActivePopup(null)
+                                    handleSelectAttempt(attempt)
+                                  }}
+                                >
+                                  👁️ View Feedback
+                                </button>
+                              )}
+                              <button
+                                className="analyze-button secondary"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleExportRecording(attempt)
+                                }}
+                                title="Export recording for backend analysis"
+                              >
+                                💾 Export
+                              </button>
+                              <button
+                                className="delete-button"
+                                onClick={async (e) => {
+                                  e.stopPropagation()
+                                  if (confirm('Are you sure you want to delete this attempt?')) {
+                                    try {
+                                      await deleteAttempt(attempt.id)
+                                      await loadSession(currentSession.id)
+                                    } catch (err) {
+                                      alert('Error deleting attempt')
+                                    }
+                                  }
+                                }}
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="no-attempts" style={{ margin: 0 }}>
+                        <p>No attempts yet. Create your first attempt to start practicing!</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
