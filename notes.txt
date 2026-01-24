@@ -1,5 +1,0 @@
-
-2. add a cancel botton near the 'start recording'
-3. fix the video line, when running the video the first 5 seconds are close to the end and you cant handle the timing. it should be relative to the video lenght.
-4. work on the session feedback prompt.
-5. fix the time to be the exact value from the analysis.json

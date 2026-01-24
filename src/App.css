@@ -2,7 +2,137 @@
   max-width: 1400px;
   margin: 0 auto;
   padding: 2rem;
-  min-height: 100vh;
+  padding-left: calc(2rem + 240px); /* Account for sidebar width */
+  height: 100vh;
+  overflow: hidden;
+}
+
+.App.user-selection-app {
+  padding: 0;
+  max-width: 100%;
+  margin: 0;
+  height: auto;
+  overflow: visible;
+}
+
+@media (max-width: 768px) {
+  .App {
+    padding-left: calc(1rem + 200px); /* Account for smaller sidebar on mobile */
+  }
+  
+  .App.user-selection-app {
+    padding: 0;
+  }
+}
+
+/* Main Content Card */
+.main-content-card {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(30, 58, 95, 0.12);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 4rem);
+  max-height: calc(100vh - 4rem);
+  position: relative;
+}
+
+/* Hero Section - Top 1/4 */
+.hero-section {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 25vh;
+  min-height: 250px;
+  max-height: 350px;
+  width: 100%;
+  overflow: visible;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  background: white;
+}
+
+.hero-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
+
+.hero-title {
+  position: relative;
+  z-index: 2;
+  color: white;
+  font-size: 3rem;
+  font-weight: 700;
+  text-align: center;
+  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
+  margin: 0;
+  padding: 0 2rem;
+  letter-spacing: -0.02em;
+}
+
+@media (max-width: 768px) {
+  .hero-title {
+    font-size: 2rem;
+  }
+  
+  .hero-section {
+    min-height: 200px;
+    max-height: 280px;
+  }
+  
+  .session-header-overlay {
+    bottom: 4rem;
+    left: 1rem;
+    right: 1rem;
+  }
+  
+  .session-header-overlay h2 {
+    font-size: 1.5rem;
+  }
+  
+  .session-actions-overlay {
+    left: 1rem;
+    right: 1rem;
+    gap: 0.5rem;
+  }
+  
+  .session-actions-overlay .cta-button {
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+  }
+}
+
+/* Page Content - Bottom 3/4 */
+.page-content {
+  position: absolute;
+  top: 25vh;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 2rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+}
+
+@media (max-width: 768px) {
+  .hero-section {
+    height: 25vh;
+    min-height: 150px;
+  }
+  
+  .page-content {
+    top: 25vh;
+  }
 }
 
 /* Landing Page Styles */
@@ -27,16 +157,16 @@
   letter-spacing: -0.02em;
 }
 
-.landing-content {
+/* Landing content inside page-content */
+.page-content .landing-content {
   max-width: 1100px;
+  margin: 0 auto;
+}
+
+.landing-content {
   display: flex;
   flex-direction: column;
   gap: 3rem;
-  background: var(--bg-card, rgba(255, 255, 255, 0.95));
-  padding: 3rem;
-  border-radius: 20px;
-  box-shadow: 0 10px 40px rgba(30, 58, 95, 0.12);
-  backdrop-filter: blur(10px);
 }
 
 .landing-main {
@@ -156,6 +286,7 @@
   display: flex;
   flex-direction: column;
   gap: 2rem;
+  width: 100%;
 }
 
 .controls-top {
@@ -691,27 +822,256 @@
 .session-list-page {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
+  width: 100%;
+}
+
+.session-list-header-overlay {
+  position: absolute;
+  bottom: 1rem;
+  left: 2rem;
+  right: 2rem;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  z-index: 20;
+}
+
+.session-list-header-overlay h2 {
+  margin: 0;
+  font-size: 2rem;
+  color: white;
+  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7);
+  font-weight: 700;
 }
 
 .session-list-header {
+  display: none; /* Hide the old header in page-content */
+}
+
+/* Session Detail Page Overlays */
+/* Admin Back Button Overlay - Top Right */
+.admin-back-overlay {
+  position: absolute;
+  top: 1.5rem;
+  right: 2rem;
+  z-index: 25;
+}
+
+.admin-back-button {
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--navy-primary, #1e3a5f);
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  padding: 0.7rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.25s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  font-family: inherit;
+}
+
+.admin-back-button:hover {
+  background: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.session-header-overlay {
+  position: absolute;
+  bottom: 5rem;
+  left: 2rem;
+  right: 2rem;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  z-index: 20;
+}
+
+.session-header-overlay h2 {
+  margin: 0;
+  font-size: 2rem;
+  color: white;
+  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7);
+  font-weight: 700;
+}
+
+.session-header-overlay .back-button {
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--navy-primary, #1e3a5f);
+  border: none;
+  padding: 0.7em 1.5em;
+  font-size: 1em;
+  font-weight: 600;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.25s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 25;
+  position: relative;
+}
+
+.session-header-overlay .back-button:hover {
+  background: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.session-actions-overlay {
+  position: absolute;
+  bottom: 1rem;
+  left: 2rem;
+  right: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  z-index: 20;
+}
+
+.session-actions-bar-overlay {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.session-actions-overlay .generate-feedback-button,
+.session-actions-overlay .regenerate-feedback-button {
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--navy-primary, #1e3a5f);
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  padding: 0.7em 1.5em;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.25s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.session-actions-overlay .generate-feedback-button:hover,
+.session-actions-overlay .regenerate-feedback-button:hover {
+  background: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.session-actions-overlay .cta-button {
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--navy-primary, #1e3a5f);
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  padding: 0.8rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.25s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.session-actions-overlay .cta-button:hover {
+  background: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.session-actions-overlay .cta-button.secondary {
+  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid rgba(255, 255, 255, 0.95);
+}
+
+.session-actions-overlay .cta-button.secondary:hover {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(255, 255, 255, 0.95);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* Attempt Header Overlay */
+.attempt-header-overlay {
+  position: absolute;
+  bottom: 1rem;
+  left: 2rem;
+  right: 2rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
-  background: var(--bg-card, rgba(255, 255, 255, 0.95));
-  padding: 1.5rem;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  z-index: 20;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
-.session-list-header h2 {
+.attempt-header-overlay h2 {
   margin: 0;
   font-size: 2rem;
-  background: linear-gradient(135deg, var(--navy-primary, #1e3a5f) 0%, var(--navy-secondary, #2c5282) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: white;
+  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7);
+  font-weight: 700;
+}
+
+.attempt-actions-overlay {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.attempt-actions-overlay .analyze-button {
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--navy-primary, #1e3a5f);
+  border: none;
+  padding: 0.8rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.25s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.attempt-actions-overlay .analyze-button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.95);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.attempt-actions-overlay .analyze-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.attempt-actions-overlay .analyze-button.secondary {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.attempt-actions-overlay .back-button {
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--navy-primary, #1e3a5f);
+  border: none;
+  padding: 0.8rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.25s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.attempt-actions-overlay .back-button:hover {
+  background: rgba(255, 255, 255, 0.95);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* Hide old session header and actions in page-content */
+.session-page .session-header,
+.session-page .session-feedback-section,
+.session-page .session-actions-bar {
+  display: none;
+}
+
+.presentation-viewer .session-header {
+  display: none;
 }
 
 .no-sessions {
@@ -782,7 +1142,7 @@
 .session-page {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
+  width: 100%;
 }
 
 .session-header {
@@ -1119,37 +1479,4 @@
   color: #718096;
   font-style: italic;
   font-size: 0.9rem;
-}
-
-/* Transcription styles */
-.transcription-box {
-  background: var(--bg-card, rgba(255, 255, 255, 0.95));
-  padding: 1.5rem;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  margin-top: 2rem;
-}
-
-.transcription-box h3 {
-  margin-bottom: 1rem;
-  color: var(--navy-primary, #1e3a5f);
-  font-size: 1.3rem;
-}
-
-.transcription-content {
-  line-height: 2;
-  color: #2d3748;
-  font-size: 1.1rem;
-}
-
-.transcription-segment {
-  display: inline;
-  margin-right: 0.3rem;
-}
-
-.transcription-word {
-  display: inline-block;
-  margin: 0 2px;
-  user-select: text;
-  position: relative;
 }

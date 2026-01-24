@@ -3,9 +3,10 @@
 const DB_NAME = 'PresentationRehearsalDB'
 const SESSIONS_STORE = 'sessions'
 const ATTEMPTS_STORE = 'attempts'
-const DB_VERSION = 3 // Bumped to force clean migration
+const USERS_STORE = 'users'
+const DB_VERSION = 5 // Bumped to match userStorage version
 
-// Initialize IndexedDB
+// Initialize IndexedDB (shared with userStorage)
 const initDB = () => {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION)
@@ -20,21 +21,26 @@ const initDB = () => {
       if (db.objectStoreNames.contains('recordings')) {
         db.deleteObjectStore('recordings')
       }
-      if (db.objectStoreNames.contains(SESSIONS_STORE)) {
-        db.deleteObjectStore(SESSIONS_STORE)
-      }
-      if (db.objectStoreNames.contains(ATTEMPTS_STORE)) {
-        db.deleteObjectStore(ATTEMPTS_STORE)
+      
+      // Create users store if it doesn't exist
+      if (!db.objectStoreNames.contains(USERS_STORE)) {
+        const usersStore = db.createObjectStore(USERS_STORE, { keyPath: 'id', autoIncrement: true })
+        usersStore.createIndex('name', 'name', { unique: false })
+        usersStore.createIndex('createdAt', 'createdAt', { unique: false })
       }
       
-      // Create sessions store
-      const sessionsStore = db.createObjectStore(SESSIONS_STORE, { keyPath: 'id', autoIncrement: true })
-      sessionsStore.createIndex('createdAt', 'createdAt', { unique: false })
+      // Create sessions store if it doesn't exist
+      if (!db.objectStoreNames.contains(SESSIONS_STORE)) {
+        const sessionsStore = db.createObjectStore(SESSIONS_STORE, { keyPath: 'id', autoIncrement: true })
+        sessionsStore.createIndex('createdAt', 'createdAt', { unique: false })
+      }
       
-      // Create attempts store
-      const attemptsStore = db.createObjectStore(ATTEMPTS_STORE, { keyPath: 'id', autoIncrement: true })
-      attemptsStore.createIndex('sessionId', 'sessionId', { unique: false })
-      attemptsStore.createIndex('timestamp', 'timestamp', { unique: false })
+      // Create attempts store if it doesn't exist
+      if (!db.objectStoreNames.contains(ATTEMPTS_STORE)) {
+        const attemptsStore = db.createObjectStore(ATTEMPTS_STORE, { keyPath: 'id', autoIncrement: true })
+        attemptsStore.createIndex('sessionId', 'sessionId', { unique: false })
+        attemptsStore.createIndex('timestamp', 'timestamp', { unique: false })
+      }
     }
   })
 }
@@ -42,7 +48,7 @@ const initDB = () => {
 // ========== SESSION FUNCTIONS ==========
 
 // Create a new session
-export const createSession = async (sessionName, surveyData = null) => {
+export const createSession = async (sessionName, surveyData = null, userId = null) => {
   const db = await initDB()
   const transaction = db.transaction([SESSIONS_STORE], 'readwrite')
   const store = transaction.objectStore(SESSIONS_STORE)
@@ -51,7 +57,8 @@ export const createSession = async (sessionName, surveyData = null) => {
     name: sessionName || `Session ${new Date().toLocaleDateString()}`,
     createdAt: Date.now(),
     processFeedback: null,
-    surveyData: surveyData
+    surveyData: surveyData,
+    userId: userId
   }
 
   return new Promise((resolve, reject) => {
@@ -64,7 +71,7 @@ export const createSession = async (sessionName, surveyData = null) => {
 }
 
 // Get all sessions
-export const getAllSessions = async () => {
+export const getAllSessions = async (userId = null) => {
   const db = await initDB()
   const transaction = db.transaction([SESSIONS_STORE], 'readonly')
   const store = transaction.objectStore(SESSIONS_STORE)
@@ -73,7 +80,14 @@ export const getAllSessions = async () => {
   return new Promise((resolve, reject) => {
     const request = index.getAll()
     request.onsuccess = async () => {
-      const sessions = request.result.sort((a, b) => b.createdAt - a.createdAt)
+      let sessions = request.result
+      
+      // Filter by userId if provided
+      if (userId) {
+        sessions = sessions.filter(session => session.userId === userId)
+      }
+      
+      sessions = sessions.sort((a, b) => b.createdAt - a.createdAt)
       
       // Load attempts for each session
       const sessionsWithAttempts = await Promise.all(
