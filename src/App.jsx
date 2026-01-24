@@ -951,7 +951,7 @@ function App() {
   // Create User Page
   if (currentView === 'createUser') {
     return (
-      <div className="App">
+      <div className="App create-user-app">
         <CreateUserPage
           onSubmit={handleCreateUserSubmit}
           onCancel={handleCancelCreateUser}

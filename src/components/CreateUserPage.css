@@ -1,7 +1,6 @@
 .create-user-page {
   min-height: 100vh;
   padding: 2rem;
-  padding-left: calc(2rem + 240px);
 }
 
 .create-user-content {
@@ -170,7 +169,6 @@
 @media (max-width: 768px) {
   .create-user-page {
     padding: 1rem;
-    padding-left: calc(1rem + 200px);
   }
   
   .scale-container {

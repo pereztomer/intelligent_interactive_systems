@@ -15,6 +15,10 @@
   overflow: visible;
 }
 
+.App.create-user-app {
+  padding-left: 2rem;
+}
+
 @media (max-width: 768px) {
   .App {
     padding-left: calc(1rem + 200px); /* Account for smaller sidebar on mobile */
@@ -22,6 +26,10 @@
   
   .App.user-selection-app {
     padding: 0;
+  }
+  
+  .App.create-user-app {
+    padding-left: 1rem;
   }
 }
 

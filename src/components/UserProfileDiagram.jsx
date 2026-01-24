@@ -45,7 +45,7 @@ const UserProfileDiagram = ({ sessions, userName }) => {
     return (
       <div className="user-profile-diagram-container">
         <h3>👤 Speaker Profile</h3>
-        <p style={{ textAlign: 'center', color: '#666', padding: '2rem' }}>
+        <p style={{ textAlign: 'center', color: 'white', padding: '2rem' }}>
           No analyzed attempts yet. Complete some presentations with analysis to see your speaker profile!
         </p>
       </div>
