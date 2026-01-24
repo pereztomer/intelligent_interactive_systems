@@ -3,7 +3,12 @@ import { Document, Page, pdfjs } from 'react-pdf'
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css'
 import 'react-pdf/dist/esm/Page/TextLayer.css'
 import './App.css'
-import SurveyModal from './components/SurveyModal'
+import Header from './components/Header'
+import UserSelection from './components/UserSelection'
+import CreateUserPage from './components/CreateUserPage'
+import ProfilePage from './components/ProfilePage'
+import AdminLogin from './components/AdminLogin'
+import AdminDashboard from './components/AdminDashboard'
 import { 
   createSession, 
   getAllSessions, 
@@ -14,16 +19,29 @@ import {
   updateAttempt,
   deleteAttempt
 } from './utils/recordingStorage'
+import { createUser, updateUser } from './utils/userStorage'
+import {
+  checkBackendAvailable,
+  saveRecording as saveRecordingToBackend,
+  analyzeAttempt as analyzeAttemptAPI,
+  generateAIFeedback as generateAIFeedbackAPI,
+  generateSessionFeedback as generateSessionFeedbackAPI,
+  saveFeedback as saveFeedbackAPI
+} from './utils/apiClient'
+import { extractAudioFromVideo } from './utils/audioProcessing'
+import { generateSpeakerProfile, formatGeminiFeedback, formatAnalysisResults } from './utils/analysisFormatting'
+import { formatTime, formatDate } from './utils/formatting'
 
 // Set up PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`
 
 function App() {
-  const [currentView, setCurrentView] = useState('landing') // 'landing', 'sessionList', 'session', 'attempt', 'createAttempt'
+  const [currentUser, setCurrentUser] = useState(null)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [currentView, setCurrentView] = useState('userSelection') // 'userSelection', 'createUser', 'landing', 'sessionList', 'session', 'attempt', 'createAttempt', 'profile', 'adminLogin', 'adminDashboard'
   const [sessions, setSessions] = useState([])
   const [currentSession, setCurrentSession] = useState(null)
   const [currentAttempt, setCurrentAttempt] = useState(null)
-  const [showSurvey, setShowSurvey] = useState(false)
   const [showRatingForm, setShowRatingForm] = useState(false)
   const [ratingData, setRatingData] = useState({
     relevance: '',
@@ -57,14 +75,13 @@ function App() {
   // Analysis state
   const [pyodide, setPyodide] = useState(null)
   const [analyzing, setAnalyzing] = useState({})
-  const [generatingSessionFeedback, setGeneratingSessionFeedback] = useState(false)
 
   // Load sessions on mount
   useEffect(() => {
-    if (currentView === 'sessionList' || currentView === 'landing') {
+    if (currentUser && (currentView === 'sessionList' || currentView === 'landing')) {
       loadSessions()
     }
-  }, [currentView])
+  }, [currentView, currentUser])
 
   // Load Pyodide for analysis
   useEffect(() => {
@@ -108,7 +125,8 @@ function App() {
 
   const loadSessions = async () => {
     try {
-      const allSessions = await getAllSessions()
+      if (!currentUser) return
+      const allSessions = await getAllSessions(currentUser.id)
       setSessions(allSessions)
     } catch (err) {
       console.error('Error loading sessions:', err)
@@ -162,9 +180,11 @@ function App() {
       const file = new File([blob], fileName || 'presentation.pdf', { type: 'application/pdf' })
       setFile(file)
       setPageNumber(1)
+      setLoading(false)
       return true
     } catch (err) {
       setError('Failed to load PDF')
+      setLoading(false)
       return false
     }
   }
@@ -221,6 +241,75 @@ function App() {
 
   const resetZoom = () => {
     setScale(1.0)
+  }
+
+  // Format Gemini Feedback with proper structure
+  const formatGeminiFeedbackHTML = (feedbackText) => {
+    if (!feedbackText) return null
+
+    // Split into lines and clean up
+    const lines = feedbackText.split('\n').map(line => line.trim()).filter(line => line)
+    
+    const sections = []
+    let currentSection = null
+    let currentItem = null
+
+    lines.forEach(line => {
+      // Remove markdown asterisks
+      const cleanLine = line.replace(/^\*+\s*/, '').replace(/\*\*/g, '')
+      
+      // Check if this is a section header (all caps)
+      const isHeader = /^[A-Z\s&]+:?\s*$/.test(cleanLine)
+      
+      // Check if this is a labeled item (Improvement 1:, Preservation 2:, etc.)
+      const labelMatch = cleanLine.match(/^(Improvement \d+|Preservation \d+):\s*(.*)$/i)
+      
+      if (isHeader) {
+        // Save previous section if exists
+        if (currentSection) {
+          if (currentItem) {
+            currentSection.items.push(currentItem)
+            currentItem = null
+          }
+          sections.push(currentSection)
+        }
+        // Start new section
+        currentSection = {
+          header: cleanLine.replace(/:$/, ''),
+          items: []
+        }
+      } else if (labelMatch && currentSection) {
+        // Save previous item if exists
+        if (currentItem) {
+          currentSection.items.push(currentItem)
+        }
+        // Start new labeled item
+        currentItem = {
+          label: labelMatch[1],
+          content: [labelMatch[2]]
+        }
+      } else if (currentItem && cleanLine) {
+        // Add to current item's content
+        currentItem.content.push(cleanLine)
+      } else if (currentSection && cleanLine) {
+        // Regular text without label
+        if (currentItem) {
+          currentSection.items.push(currentItem)
+          currentItem = null
+        }
+        currentSection.items.push({ label: null, content: [cleanLine] })
+      }
+    })
+    
+    // Add last item and section
+    if (currentItem && currentSection) {
+      currentSection.items.push(currentItem)
+    }
+    if (currentSection) {
+      sections.push(currentSection)
+    }
+
+    return sections
   }
 
   // Recording functions
@@ -319,41 +408,29 @@ function App() {
             console.log(`Session attempt number: ${sessionAttemptNumber}`)
             
             try {
-              const response = await fetch('http://localhost:5000/save_recording', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  sessionName: currentSession.name,
-                  sessionId: currentSession.id,
-                  attemptNumber: sessionAttemptNumber,
-                  audioData: audioData,
-                  videoData: base64data,
-                  pdfData: pdfData,
-                  fileName: fileName,
-                  navigationEvents: navigationEventsRef.current,
-                  surveyData: currentSession.surveyData || null
-                })
+              const result = await saveRecordingToBackend({
+                sessionName: currentSession.name,
+                sessionId: currentSession.id,
+                attemptNumber: sessionAttemptNumber,
+                audioData: audioData,
+                videoData: base64data,
+                pdfData: pdfData,
+                fileName: fileName,
+                navigationEvents: navigationEventsRef.current,
+                surveyData: currentSession.surveyData || null
               })
               
-              if (response.ok) {
-                const result = await response.json()
-                console.log('✅ Files saved to:', result.attemptDir)
-                
-                // Update attempt with file paths
-                await updateAttempt(attempt.id, { 
-                  audioPath: result.audioPath,
-                  videoPath: result.videoPath,
-                  pdfPath: result.pdfPath,
-                  navigationPath: result.navigationPath 
-                })
-                
-                alert(`Recording saved successfully!\n\nFiles saved to: ${result.attemptDir}`)
-              } else {
-                console.error('Backend save failed')
-                alert('Recording saved to browser, but file system save failed. Check if backend is running.')
-              }
+              console.log('✅ Files saved to:', result.attemptDir)
+              
+              // Update attempt with file paths
+              await updateAttempt(attempt.id, { 
+                audioPath: result.audioPath,
+                videoPath: result.videoPath,
+                pdfPath: result.pdfPath,
+                navigationPath: result.navigationPath 
+              })
+              
+              alert(`Recording saved successfully!\n\nFiles saved to: ${result.attemptDir}`)
             } catch (backendErr) {
               console.error('Backend not available:', backendErr)
               alert('Recording saved to browser, but backend is not running.\nAudio and navigation files were NOT saved to disk.')
@@ -418,41 +495,62 @@ function App() {
     }
   }, [])
 
-  const formatTime = (seconds) => {
-    const roundedSeconds = Math.floor(seconds)
-    const mins = Math.floor(roundedSeconds / 60)
-    const secs = roundedSeconds % 60
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+  // Handle user selection
+  const handleUserSelect = async (user) => {
+    setCurrentUser(user)
+    await updateUser(user.id, { lastActive: Date.now() })
+    setCurrentView('landing')
   }
 
-  const formatDate = (timestamp) => {
-    return new Date(timestamp).toLocaleString()
+  // Handle create new user
+  const handleCreateUser = () => {
+    setCurrentView('createUser')
   }
 
-  // Handle new session creation
-  const handleNewSession = async () => {
-    setShowSurvey(true)
-  }
-
-  // Handle survey submission
-  const handleSurveySubmit = async (surveyData) => {
+  // Handle create user form submission
+  const handleCreateUserSubmit = async (userName, surveyData) => {
     try {
-      const sessionName = prompt('Enter a name for your session (or leave blank for default):')
-      // Don't cancel if user presses cancel on prompt - just use default name
-      const session = await createSession(sessionName || null, surveyData)
+      const user = await createUser(userName || null, surveyData)
+      setCurrentUser(user)
+      // Go to landing page instead of creating session immediately
+      setCurrentView('landing')
+    } catch (err) {
+      console.error('Error creating user:', err)
+      alert('Failed to create user: ' + err.message)
+    }
+  }
+
+  // Handle update user stats
+  const handleUpdateUserStats = async (userId, surveyData) => {
+    try {
+      const updatedUser = await updateUser(userId, { surveyData })
+      setCurrentUser(updatedUser)
+    } catch (err) {
+      console.error('Error updating user stats:', err)
+      throw err
+    }
+  }
+
+  // Handle cancel create user
+  const handleCancelCreateUser = () => {
+    setCurrentView('userSelection')
+  }
+
+  // Handle new session creation (for existing users)
+  const handleNewSession = async () => {
+    if (!currentUser) {
+      setCurrentView('userSelection')
+      return
+    }
+    // Create new session directly without survey
+    try {
+      const session = await createSession(null, null, currentUser.id)
       await loadSession(session.id)
-      setShowSurvey(false)
       setCurrentView('session')
     } catch (err) {
       console.error('Error creating session:', err)
       alert('Failed to create session: ' + err.message)
-      setShowSurvey(false)
     }
-  }
-
-  // Handle survey cancel
-  const handleSurveyCancel = () => {
-    setShowSurvey(false)
   }
 
   // Handle rating form submission
@@ -460,33 +558,22 @@ function App() {
     e.preventDefault()
     
     try {
-      // Send rating data to backend
-      const response = await fetch('http://localhost:5000/save_feedback', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          sessionName: currentSession.name,
-          sessionId: currentSession.id,
-          attemptNumber: currentSession.attempts.length - currentSession.attempts.findIndex(a => a.id === currentAttempt.id),
-          feedback: ratingData
-        })
-      })
+      await saveFeedbackAPI(
+        currentSession.name,
+        currentSession.id,
+        currentSession.attempts.findIndex(a => a.id === currentAttempt.id) + 1,
+        ratingData
+      )
       
-      if (response.ok) {
-        alert('Thank you for your feedback!')
-        setShowRatingForm(false)
-        setRatingData({
-          relevance: '',
-          helpfulness: '',
-          clarity: '',
-          actionability: '',
-          recommendation: ''
-        })
-      } else {
-        alert('Failed to save feedback. Please try again.')
-      }
+      alert('Thank you for your feedback!')
+      setShowRatingForm(false)
+      setRatingData({
+        relevance: '',
+        helpfulness: '',
+        clarity: '',
+        actionability: '',
+        recommendation: ''
+      })
     } catch (err) {
       console.error('Error saving feedback:', err)
       alert('Error saving feedback. Make sure the backend server is running.')
@@ -503,10 +590,65 @@ function App() {
     setCurrentView('sessionList')
   }
 
+  // Handle navigation to home
+  const handleNavigateHome = () => {
+    if (!currentUser) {
+      setCurrentView('userSelection')
+    } else {
+      setCurrentView('landing')
+      setCurrentSession(null)
+      setCurrentAttempt(null)
+    }
+  }
+
+  // Handle navigation to sessions list
+  const handleNavigateToSessions = () => {
+    setCurrentView('sessionList')
+    setCurrentSession(null)
+    setCurrentAttempt(null)
+  }
+
+  const handleNavigateToProfile = () => {
+    setCurrentView('profile')
+  }
+
+  // Handle admin login
+  const handleAdminLogin = () => {
+    setIsAdmin(true)
+    setCurrentView('adminDashboard')
+  }
+
+  // Handle admin logout
+  const handleAdminLogout = () => {
+    setIsAdmin(false)
+    setCurrentView('userSelection')
+  }
+
+  // Handle navigate to admin login
+  const handleNavigateToAdminLogin = () => {
+    setCurrentView('adminLogin')
+  }
+
   // Handle session selection
   const handleSelectSession = async (sessionId) => {
     await loadSession(sessionId)
     setCurrentView('session')
+  }
+
+  // Handle attempt selection (for admin - takes sessionId and attemptId)
+  const handleAdminSelectAttempt = async (sessionId, attemptId) => {
+    const session = await getSession(sessionId)
+    if (session) {
+      setCurrentSession(session)
+      const attempt = session.attempts?.find(a => a.id === attemptId)
+      if (attempt) {
+        setCurrentAttempt(attempt)
+        if (attempt.pdfData) {
+          await loadPDFFromData(attempt.pdfData, attempt.fileName)
+        }
+        setCurrentView('attempt')
+      }
+    }
   }
 
   // Handle new attempt creation
@@ -545,305 +687,9 @@ function App() {
     setCurrentView('attempt')
   }
 
-  // Helper functions for backend analysis
-  const checkBackendAvailable = async () => {
-    try {
-      const response = await fetch('http://localhost:5000/health', {
-        method: 'GET',
-        signal: AbortSignal.timeout(2000) // 2 second timeout
-      })
-      return response.ok
-    } catch (err) {
-      return false
-    }
-  }
+  // Helper functions for backend analysis (now using apiClient)
 
-  const extractAudioFromVideo = async (videoBase64) => {
-    try {
-      // Convert base64 video to blob
-      const response = await fetch(videoBase64)
-      const videoBlob = await response.blob()
-      
-      // Create audio context
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)()
-      
-      // Decode video to get audio
-      const arrayBuffer = await videoBlob.arrayBuffer()
-      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
-      
-      // Convert to WAV format
-      const wavBlob = audioBufferToWav(audioBuffer)
-      
-      // Convert to base64
-      return new Promise((resolve) => {
-        const reader = new FileReader()
-        reader.onloadend = () => resolve(reader.result)
-        reader.readAsDataURL(wavBlob)
-      })
-    } catch (err) {
-      console.error('Audio extraction error:', err)
-      return null
-    }
-  }
-
-  const audioBufferToWav = (audioBuffer) => {
-    const numChannels = 1 // Mono
-    const sampleRate = 16000 // 16kHz for speech
-    const format = 1 // PCM
-    const bitDepth = 16
-    
-    // Resample to 16kHz mono
-    const length = Math.ceil(audioBuffer.duration * sampleRate)
-    const result = new Float32Array(length)
-    const originalSampleRate = audioBuffer.sampleRate
-    
-    for (let i = 0; i < length; i++) {
-      const originalIndex = Math.floor(i * originalSampleRate / sampleRate)
-      let sum = 0
-      for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
-        sum += audioBuffer.getChannelData(channel)[originalIndex] || 0
-      }
-      result[i] = sum / audioBuffer.numberOfChannels
-    }
-    
-    // Create WAV file
-    const buffer = new ArrayBuffer(44 + result.length * 2)
-    const view = new DataView(buffer)
-    
-    // WAV header
-    const writeString = (offset, string) => {
-      for (let i = 0; i < string.length; i++) {
-        view.setUint8(offset + i, string.charCodeAt(i))
-      }
-    }
-    
-    writeString(0, 'RIFF')
-    view.setUint32(4, 36 + result.length * 2, true)
-    writeString(8, 'WAVE')
-    writeString(12, 'fmt ')
-    view.setUint32(16, 16, true)
-    view.setUint16(20, format, true)
-    view.setUint16(22, numChannels, true)
-    view.setUint32(24, sampleRate, true)
-    view.setUint32(28, sampleRate * numChannels * bitDepth / 8, true)
-    view.setUint16(32, numChannels * bitDepth / 8, true)
-    view.setUint16(34, bitDepth, true)
-    writeString(36, 'data')
-    view.setUint32(40, result.length * 2, true)
-    
-    // Write audio data
-    let offset = 44
-    for (let i = 0; i < result.length; i++) {
-      const sample = Math.max(-1, Math.min(1, result[i]))
-      view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true)
-      offset += 2
-    }
-    
-    return new Blob([buffer], { type: 'audio/wav' })
-  }
-
-  const generateSpeakerProfile = (result) => {
-    // Initialize variables
-    let totalSpeechDuration = 0
-    let weightedWpmSum = 0
-    let weightedPitchRangeSum = 0
-    let weightedEnergyVarSum = 0
-    let allFillers = []
-
-    // Process all speech segments (support both camelCase and snake_case)
-    const segments = result.speechSegments || result.speech_segments
-    if (segments) {
-      segments.forEach(seg => {
-        const dur = seg.duration
-        const features = seg.audioFeatures || seg.audio_features
-
-        totalSpeechDuration += dur
-        weightedWpmSum += (features.wordsPerMinute || features.words_per_minute) * dur
-        weightedPitchRangeSum += (features.pitchRangeHz || features.pitch_range_hz) * dur
-        weightedEnergyVarSum += (features.energyVariance || features.energy_variance) * dur
-        allFillers.push(...(features.fillerWords || features.filler_words || []))
-      })
-    }
-
-    // Calculate weighted averages
-    const avgWpm = totalSpeechDuration > 0 ? weightedWpmSum / totalSpeechDuration : 0
-    const avgPitchRange = totalSpeechDuration > 0 ? weightedPitchRangeSum / totalSpeechDuration : 0
-    const avgEnergyVar = totalSpeechDuration > 0 ? weightedEnergyVarSum / totalSpeechDuration : 0
-
-    const speakingPct = result.pacing?.speakingPercentage || result.pacing_metrics?.speaking_percentage || 0
-    const uniqueFillers = [...new Set(allFillers)]
-
-    // Normalize values to percentages (0-100)
-    // WPM: typical range 0-200, optimal around 120-140
-    const normalizedWpm = Math.min(100, (avgWpm / 200) * 100)
-    
-    // Pitch Range: typical range 0-400 Hz
-    const normalizedPitchRange = Math.min(100, (avgPitchRange / 400) * 100)
-    
-    // Energy Variance: typical range 0-0.015
-    const normalizedEnergyVar = Math.min(100, (avgEnergyVar / 0.015) * 100)
-    
-    // Speaking Percentage: already 0-100
-    const normalizedSpeakingPct = speakingPct
-
-    // Build profile with separate metrics
-    const profile = {}
-
-    // 1. Pacing Analysis
-    if (avgWpm < 110) {
-      profile.pacing = `The speaker maintains a slow, deliberate pace. **${normalizedWpm.toFixed(1)}%**`
-    } else if (avgWpm <= 140) {
-      profile.pacing = `The speaker communicates at an ideal conversational rate. **${normalizedWpm.toFixed(1)}%**`
-    } else {
-      profile.pacing = `The delivery is rapid, suggesting high urgency. **${normalizedWpm.toFixed(1)}%**`
-    }
-
-    // 2. Fluency Analysis
-    if (speakingPct < 55) {
-      profile.fluency = `The speech is highly fragmented with long silences. **${normalizedSpeakingPct.toFixed(1)}%**`
-    } else if (speakingPct <= 75) {
-      profile.fluency = `The flow is natural with balanced pauses. **${normalizedSpeakingPct.toFixed(1)}%**`
-    } else {
-      profile.fluency = `The speaker is exceptionally fluent with minimal interruptions. **${normalizedSpeakingPct.toFixed(1)}%**`
-    }
-
-    // 3. Expressiveness Analysis
-    if (avgPitchRange < 150) {
-      profile.expressiveness = `The vocal tone is relatively monotone. **${normalizedPitchRange.toFixed(1)}%**`
-    } else if (avgPitchRange <= 250) {
-      profile.expressiveness = `The voice shows healthy modulation. **${normalizedPitchRange.toFixed(1)}%**`
-    } else {
-      profile.expressiveness = `The speaker is highly dynamic, using a wide pitch range to emphasize points. **${normalizedPitchRange.toFixed(1)}%**`
-    }
-
-    // 4. Stability Analysis
-    if (avgEnergyVar < 0.002) {
-      profile.stability = `The speaker exhibits exceptional vocal control, maintaining a very steady and professional volume. **${normalizedEnergyVar.toFixed(1)}%**`
-    } else if (avgEnergyVar <= 0.007) {
-      profile.stability = `Volume levels are mostly consistent, with natural energy shifts that help maintain listener interest. **${normalizedEnergyVar.toFixed(1)}%**`
-    } else {
-      profile.stability = `There are significant fluctuations in vocal energy, which may suggest inconsistent breath control or very intense emotional emphasis. **${normalizedEnergyVar.toFixed(1)}%**`
-    }
-
-    // 5. Filler Words
-    if (uniqueFillers.length > 0) {
-      profile.fillers = `Usage of filler words like '${uniqueFillers.join(", ")}' was noted.`
-    } else {
-      profile.fillers = "The speech is clean, with no detectable filler words."
-    }
-
-    return profile
-  }
-
-  const formatGeminiFeedback = (result) => {
-    if (!result.geminiFeedback) return null
-    
-    const lines = []
-    // Split feedback into lines - each sentence on a new line
-    const feedbackLines = result.geminiFeedback
-      .split(/[.!?]\s+/)
-      .filter(line => line.trim().length > 0)
-      .map(line => {
-        const trimmed = line.trim()
-        // Add punctuation if missing
-        if (trimmed && !trimmed.match(/[.!?]$/)) {
-          return trimmed + '.'
-        }
-        return trimmed
-      })
-    feedbackLines.forEach(line => lines.push(line))
-    
-    return lines.join('\n')
-  }
-
-  // Format Gemini Feedback with proper structure
-  const formatGeminiFeedbackHTML = (feedbackText) => {
-    if (!feedbackText) return null
-
-    // Split into lines and clean up
-    const lines = feedbackText.split('\n').map(line => line.trim()).filter(line => line)
-    
-    const sections = []
-    let currentSection = null
-    let currentItem = null
-
-    lines.forEach(line => {
-      // Remove markdown asterisks
-      const cleanLine = line.replace(/^\*+\s*/, '').replace(/\*\*/g, '')
-      
-      // Check if this is a section header (all caps)
-      const isHeader = /^[A-Z\s&]+:?\s*$/.test(cleanLine)
-      
-      // Check if this is a labeled item (Improvement 1:, Preservation 2:, etc.)
-      const labelMatch = cleanLine.match(/^(Improvement \d+|Preservation \d+):\s*(.*)$/i)
-      
-      if (isHeader) {
-        // Save previous section if exists
-        if (currentSection) {
-          if (currentItem) {
-            currentSection.items.push(currentItem)
-            currentItem = null
-          }
-          sections.push(currentSection)
-        }
-        // Start new section
-        currentSection = {
-          header: cleanLine.replace(/:$/, ''),
-          items: []
-        }
-      } else if (labelMatch && currentSection) {
-        // Save previous item if exists
-        if (currentItem) {
-          currentSection.items.push(currentItem)
-        }
-        // Start new labeled item
-        currentItem = {
-          label: labelMatch[1],
-          content: [labelMatch[2]]
-        }
-      } else if (currentItem && cleanLine) {
-        // Add to current item's content
-        currentItem.content.push(cleanLine)
-      } else if (currentSection && cleanLine) {
-        // Regular text without label
-        if (currentItem) {
-          currentSection.items.push(currentItem)
-          currentItem = null
-        }
-        currentSection.items.push({ label: null, content: [cleanLine] })
-      }
-    })
-    
-    // Add last item and section
-    if (currentItem && currentSection) {
-      currentSection.items.push(currentItem)
-    }
-    if (currentSection) {
-      sections.push(currentSection)
-    }
-
-    return sections
-  }
-
-  const formatAnalysisResults = (result) => {
-    const lines = []
-    lines.push(`⏱️  Duration: ${result.duration.toFixed(1)}s`)
-    lines.push('')
-
-    // Add Speaker Profile (check for both naming conventions)
-    const segments = result.speechSegments || result.speech_segments
-    if (segments && segments.length > 0) {
-      const profile = generateSpeakerProfile(result)
-      lines.push('👤 SPEAKER PROFILE:')
-      lines.push(`   • Pacing: ${profile.pacing}`)
-      lines.push(`   • Fluency: ${profile.fluency}`)
-      lines.push(`   • Expressiveness: ${profile.expressiveness}`)
-      lines.push(`   • Stability: ${profile.stability}`)
-      lines.push(`   • Fillers: ${profile.fillers}`)
-    }
-    
-    return lines.join('\n')
-  }
+  // Analysis formatting functions moved to utils/analysisFormatting.js
 
   // Handle export recording
   const handleExportRecording = (attempt) => {
@@ -916,22 +762,7 @@ function App() {
         console.log('📁 Using audio file:', attempt.audioPath)
         
         // Send audio file path to backend
-        const response = await fetch('http://localhost:5000/analyze', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            audioPath: attempt.audioPath,
-            enableTranscription: true
-          })
-        })
-        
-        if (!response.ok) {
-          throw new Error('Backend analysis failed: ' + response.statusText)
-        }
-        
-        const result = await response.json()
+        const result = await analyzeAttemptAPI(attempt.audioPath)
         
         // Debug logging
         console.log('📊 Analysis result:', result)
@@ -1015,34 +846,10 @@ function App() {
       console.log('🤖 Generating AI feedback only...')
       
       // Call Gemini feedback endpoint
-      const response = await fetch('http://localhost:5000/generate_feedback', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          audioPath: attempt.audioPath
-        })
-      })
-      
-      if (!response.ok) {
-        throw new Error('AI feedback generation failed: ' + response.statusText)
-      }
-      
-      const result = await response.json()
+      const result = await generateAIFeedbackAPI(attempt.audioPath)
       
       // Format and save Gemini feedback separately
-      const geminiFeedback = result.feedback
-        .split(/[.!?]\s+/)
-        .filter(line => line.trim().length > 0)
-        .map(line => {
-          const trimmed = line.trim()
-          if (trimmed && !trimmed.match(/[.!?]$/)) {
-            return trimmed + '.'
-          }
-          return trimmed
-        })
-        .join('\n')
+      const geminiFeedback = formatGeminiFeedback(result)
       
       // Save Gemini feedback
       await updateAttempt(attemptId, { geminiFeedback: geminiFeedback })
@@ -1059,45 +866,144 @@ function App() {
 
   // ========== VIEW RENDERS ==========
 
+  // Admin Login Page
+  if (currentView === 'adminLogin') {
+    return (
+      <div className="App user-selection-app">
+        <AdminLogin 
+          onLogin={handleAdminLogin}
+          onCancel={() => setCurrentView('userSelection')}
+        />
+      </div>
+    )
+  }
+
+  // Admin Dashboard
+  if (currentView === 'adminDashboard' && isAdmin) {
+    return (
+      <div className="App">
+        <AdminDashboard 
+          onLogout={handleAdminLogout}
+          onSelectSession={handleSelectSession}
+          onSelectAttempt={handleAdminSelectAttempt}
+        />
+      </div>
+    )
+  }
+
+  // User Selection Page (First page)
+  if (currentView === 'userSelection' || (!currentUser && currentView !== 'createUser' && !isAdmin)) {
+    return (
+      <div className="App user-selection-app">
+        <UserSelection 
+          onUserSelect={handleUserSelect}
+          onCreateUser={handleCreateUser}
+          onAdminLogin={handleNavigateToAdminLogin}
+        />
+      </div>
+    )
+  }
+
+  // Create User Page
+  if (currentView === 'createUser') {
+    return (
+      <div className="App">
+        <CreateUserPage
+          onSubmit={handleCreateUserSubmit}
+          onCancel={handleCancelCreateUser}
+        />
+      </div>
+    )
+  }
+
   // Landing Page
   if (currentView === 'landing') {
     return (
       <div className="App">
-        <SurveyModal 
-          isOpen={showSurvey} 
-          onClose={handleSurveyCancel}
-          onSubmit={handleSurveySubmit}
+        <Header 
+          onNavigateHome={handleNavigateHome}
+          onNavigateToSessions={handleNavigateToSessions}
+          onNavigateToProfile={handleNavigateToProfile}
+          currentView={currentView}
+          currentSession={currentSession}
+          totalSessions={sessions.length}
+          sessions={sessions}
+          onSelectSession={handleSelectSession}
+          currentUser={currentUser}
+          onSwitchUser={() => {
+            setCurrentUser(null)
+            setCurrentView('userSelection')
+            setCurrentSession(null)
+            setCurrentAttempt(null)
+          }}
+          onUpdateUserStats={handleUpdateUserStats}
         />
-        <div className="landing-page">
-          <h1 className="app-title">Presentation Rehearsal Coach</h1>
+        <div className="main-content-card">
+          {/* Hero Section - Top 1/4 */}
+          <div className="hero-section">
+            <img src="/hero-image.png" alt="Hero" className="hero-image" />
+            <h1 className="hero-title">Presentation Rehearsal Coach</h1>
+          </div>
           
-          <div className="landing-content">
-            <div className="landing-main">
-              <div className="landing-text">
-                <p className="problem-text">
-                  Strong presentations depend on clarity, pacing, and alignment between spoken content and slides. 
-                  Most people practice alone due to shyness, lack of listening audience, and receive little objective feedback. 
-                  While existing tools effectively analyze speech or slide mechanics individually, the market remains fragmented. 
-                  There is a lack of accessible, unified systems that evaluate delivery, slide usage, and content coherence in a single interface. 
-                  The goal is to create an AI-based coach that provides concrete, personalized insights to help users significantly improve their communication skills.
-                </p>
+          {/* Page Content - Bottom 3/4 */}
+          <div className="page-content">
+            <div className="landing-content">
+              <div className="landing-main">
+                <div className="landing-text">
+                  <p className="problem-text">
+                    Strong presentations depend on clarity, pacing, and alignment between spoken content and slides. 
+                    Most people practice alone due to shyness, lack of listening audience, and receive little objective feedback. 
+                    While existing tools effectively analyze speech or slide mechanics individually, the market remains fragmented. 
+                    There is a lack of accessible, unified systems that evaluate delivery, slide usage, and content coherence in a single interface. 
+                    The goal is to create an AI-based coach that provides concrete, personalized insights to help users significantly improve their communication skills.
+                  </p>
+                </div>
+                <div className="landing-image">
+                  <img src="/workflow.png" alt="Workflow: Upload Slides → Practice → Feedback" />
+                </div>
               </div>
-              <div className="landing-image">
-                <img src="/workflow.png" alt="Workflow: Upload Slides → Practice → Feedback" />
+              
+              <div className="cta-section">
+                <button className="cta-button" onClick={handleNewSession}>
+                  Start New Session
+                </button>
+                <button className="cta-button secondary" onClick={handleContinueSession}>
+                  Continue Existing Session
+                </button>
+                {error && <p className="error">{error}</p>}
               </div>
-            </div>
-            
-            <div className="cta-section">
-              <button className="cta-button" onClick={handleNewSession}>
-                Start New Session
-              </button>
-              <button className="cta-button secondary" onClick={handleContinueSession}>
-                Continue Existing Session
-              </button>
-              {error && <p className="error">{error}</p>}
             </div>
           </div>
         </div>
+      </div>
+    )
+  }
+
+  // Profile/Stats Page
+  if (currentView === 'profile') {
+    return (
+      <div className="App">
+        <Header 
+          onNavigateHome={handleNavigateHome}
+          onNavigateToSessions={handleNavigateToSessions}
+          onNavigateToProfile={handleNavigateToProfile}
+          currentView={currentView}
+          currentSession={currentSession}
+          totalSessions={sessions.length}
+          sessions={sessions}
+          onSelectSession={handleSelectSession}
+          currentUser={currentUser}
+          onSwitchUser={() => {
+            setCurrentUser(null)
+            setCurrentView('userSelection')
+            setCurrentSession(null)
+            setCurrentAttempt(null)
+          }}
+        />
+        <ProfilePage 
+          currentUser={currentUser}
+          onUpdateUserStats={handleUpdateUserStats}
+        />
       </div>
     )
   }
@@ -1106,213 +1012,245 @@ function App() {
   if (currentView === 'sessionList') {
     return (
       <div className="App">
-        <div className="session-list-page">
-          <div className="session-list-header">
-            <h2>My Sessions</h2>
-            <button className="back-button" onClick={() => setCurrentView('landing')}>
-              ← Back
-            </button>
+        <Header 
+          onNavigateHome={handleNavigateHome}
+          onNavigateToSessions={handleNavigateToSessions}
+          onNavigateToProfile={handleNavigateToProfile}
+          currentView={currentView}
+          currentSession={currentSession}
+          totalSessions={sessions.length}
+          sessions={sessions}
+          onSelectSession={handleSelectSession}
+          currentUser={currentUser}
+          onSwitchUser={() => {
+            setCurrentUser(null)
+            setCurrentView('userSelection')
+            setCurrentSession(null)
+            setCurrentAttempt(null)
+          }}
+          onUpdateUserStats={handleUpdateUserStats}
+        />
+        <div className="main-content-card">
+          {/* Hero Section - Top 1/4 */}
+          <div className="hero-section">
+            <img src="/hero-image.png" alt="Hero" className="hero-image" />
+            <h1 className="hero-title">Presentation Rehearsal Coach</h1>
+            {/* Session List Header Overlay */}
+            <div className="session-list-header-overlay">
+              <h2>My Sessions</h2>
+            </div>
           </div>
+          
+          {/* Page Content - Bottom 3/4 */}
+          <div className="page-content">
+            <div className="session-list-page">
 
-          {sessions.length === 0 ? (
-            <div className="no-sessions">
-              <p>No sessions yet. Start a new session to begin!</p>
-              <button className="cta-button" onClick={handleNewSession}>
-                Start New Session
-              </button>
-            </div>
-          ) : (
-            <div className="sessions-list">
-              {sessions.map((session) => (
-                <div
-                  key={session.id}
-                  className="session-item"
-                  onClick={() => handleSelectSession(session.id)}
-                >
-                  <div className="session-info">
-                    <h3>{session.name}</h3>
-                    <p className="session-meta">
-                      {formatDate(session.createdAt)} • {session.attempts?.length || 0} attempt(s)
-                    </p>
-                    {session.processFeedback && (
-                      <p className="feedback-preview">📊 Process Feedback Available</p>
-                    )}
-                  </div>
-                  <div className="session-actions">
-                    <button
-                      className="delete-button"
-                      onClick={async (e) => {
-                        e.stopPropagation()
-                        if (confirm('Are you sure you want to delete this session?')) {
-                          try {
-                            await deleteSession(session.id)
-                            loadSessions()
-                          } catch (err) {
-                            alert('Error deleting session')
-                          }
-                        }
-                      }}
-                    >
-                      🗑️
-                    </button>
-                  </div>
+              {sessions.length === 0 ? (
+                <div className="no-sessions">
+                  <p>No sessions yet. Start a new session to begin!</p>
+                  <button className="cta-button" onClick={handleNewSession}>
+                    Start New Session
+                  </button>
                 </div>
-              ))}
+              ) : (
+                <div className="sessions-list">
+                  {sessions.map((session) => (
+                    <div
+                      key={session.id}
+                      className="session-item"
+                      onClick={() => handleSelectSession(session.id)}
+                    >
+                      <div className="session-info">
+                        <h3>{session.name}</h3>
+                        <p className="session-meta">
+                          {formatDate(session.createdAt)} • {session.attempts?.length || 0} attempt(s)
+                        </p>
+                        {session.processFeedback && (
+                          <p className="feedback-preview">📊 Process Feedback Available</p>
+                        )}
+                      </div>
+                      <div className="session-actions">
+                        <button
+                          className="delete-button"
+                          onClick={async (e) => {
+                            e.stopPropagation()
+                            if (confirm('Are you sure you want to delete this session?')) {
+                              try {
+                                await deleteSession(session.id)
+                                loadSessions()
+                              } catch (err) {
+                                alert('Error deleting session')
+                              }
+                            }
+                          }}
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </div>
     )
   }
 
-  // Session Detail Page
-  if (currentView === 'session' && currentSession) {
+  // Session Detail Page (for regular users and admin)
+  if (currentView === 'session' && currentSession && (currentUser || isAdmin)) {
     return (
       <div className="App">
-        <div className="session-page">
-          <div className="session-header">
-            <h2>{currentSession.name}</h2>
-            <button className="back-button" onClick={() => {
-              setCurrentSession(null)
-              setCurrentView('sessionList')
-            }}>
-              ← Back
-            </button>
-          </div>
-
-          <div className="session-feedback-section">
-            {currentSession.processFeedback ? (
-              <div className="session-feedback-box">
-                <h3>Session Process Feedback</h3>
-                <div className="session-feedback-content">
-                  {currentSession.processFeedback.split(/(?=\d+\.\s)/).filter(line => line.trim()).map((line, idx) => (
-                    <p key={idx}>{line.trim()}</p>
-                  ))}
-                </div>
+        <Header 
+          onNavigateHome={handleNavigateHome}
+          onNavigateToSessions={handleNavigateToSessions}
+          onNavigateToProfile={handleNavigateToProfile}
+          currentView={currentView}
+          currentSession={currentSession}
+          totalSessions={sessions.length}
+          sessions={sessions}
+          onSelectSession={handleSelectSession}
+          currentUser={currentUser}
+          onSwitchUser={() => {
+            if (isAdmin) {
+              setIsAdmin(false)
+              setCurrentView('adminDashboard')
+            } else {
+              setCurrentUser(null)
+              setCurrentView('userSelection')
+            }
+            setCurrentSession(null)
+            setCurrentAttempt(null)
+          }}
+          onUpdateUserStats={handleUpdateUserStats}
+        />
+        <div className="main-content-card">
+          {/* Hero Section - Top 1/4 */}
+          <div className="hero-section">
+            <img src="/hero-image.png" alt="Hero" className="hero-image" />
+            <h1 className="hero-title">Presentation Rehearsal Coach</h1>
+            
+            {/* Admin Back Button Overlay - Top Right */}
+            {isAdmin && (
+              <div className="admin-back-overlay">
                 <button 
-                  className="regenerate-feedback-button"
-                  onClick={async () => {
-                    try {
-                      setGeneratingSessionFeedback(true)
-                      
-                      // Check if backend is available
-                      const useBackend = await checkBackendAvailable()
-                      
-                      if (!useBackend) {
-                        alert('Backend server is not running. Please start it to regenerate AI session feedback.')
-                        setGeneratingSessionFeedback(false)
-                        return
-                      }
-                      
-                      // Generate session feedback with Gemini
-                      const response = await fetch('http://localhost:5000/session_feedback', {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                          sessionName: currentSession.name,
-                          sessionId: currentSession.id
-                        })
-                      })
-                      
-                      if (!response.ok) {
-                        throw new Error('Session feedback generation failed')
-                      }
-                      
-                      const result = await response.json()
-                      await updateSession(currentSession.id, { processFeedback: result.feedback })
-                      await loadSession(currentSession.id)
-                      
-                      alert('Session feedback regenerated successfully!')
-                    } catch (err) {
-                      console.error('Error regenerating session feedback:', err)
-                      alert('Failed to regenerate session feedback: ' + err.message)
-                    } finally {
-                      setGeneratingSessionFeedback(false)
-                    }
+                  className="admin-back-button"
+                  onClick={() => {
+                    setCurrentView('adminDashboard')
+                    setCurrentSession(null)
+                    setCurrentAttempt(null)
                   }}
-                  disabled={generatingSessionFeedback}
                 >
-                  {generatingSessionFeedback ? '⏳ Generating...' : 'Regenerate Feedback'}
+                  ← Back to Admin Dashboard
                 </button>
               </div>
-            ) : (
-              currentSession.attempts && currentSession.attempts.length > 0 && (
-                <button 
-                  className="generate-feedback-button"
-                  onClick={async () => {
-                    try {
-                      setGeneratingSessionFeedback(true)
-                      
-                      // Check if backend is available
-                      const useBackend = await checkBackendAvailable()
-                      
-                      if (!useBackend) {
-                        alert('Backend server is not running. Please start it to generate AI session feedback.')
-                        setGeneratingSessionFeedback(false)
-                        return
-                      }
-                      
-                      // Generate session feedback with Gemini
-                      const response = await fetch('http://localhost:5000/session_feedback', {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                          sessionName: currentSession.name,
-                          sessionId: currentSession.id
-                        })
-                      })
-                      
-                      if (!response.ok) {
-                        throw new Error('Session feedback generation failed')
-                      }
-                      
-                      const result = await response.json()
-                      await updateSession(currentSession.id, { processFeedback: result.feedback })
-                      await loadSession(currentSession.id)
-                      
-                      alert('Session feedback generated successfully!')
-                    } catch (err) {
-                      console.error('Error generating session feedback:', err)
-                      alert('Failed to generate session feedback: ' + err.message)
-                    } finally {
-                      setGeneratingSessionFeedback(false)
-                    }
-                  }}
-                  disabled={generatingSessionFeedback}
-                >
-                  {generatingSessionFeedback ? '⏳ Generating...' : 'Generate Session Feedback'}
-                </button>
-              )
             )}
-          </div>
+            
+            {/* Session Header Overlay */}
+            <div className="session-header-overlay">
+              <h2>{currentSession.name}</h2>
+            </div>
 
-          <div className="session-actions-bar">
-            <input
-              type="file"
-              accept=".pdf"
-              onChange={handleFileUploadForAttempt}
-              id="file-upload-attempt"
-              style={{ display: 'none' }}
-            />
-            <button 
-              className="cta-button"
-              onClick={() => handleNewAttempt(false)}
-            >
-              + New Attempt (Upload PDF)
-            </button>
-            {currentSession.attempts && currentSession.attempts.length > 0 && (
-              <button 
-                className="cta-button secondary"
-                onClick={() => handleNewAttempt(true)}
-              >
-                + New Attempt (Use Previous PDF)
-              </button>
-            )}
+            {/* Session Actions Overlay */}
+            <div className="session-actions-overlay">
+              <div className="session-actions-bar-overlay">
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={handleFileUploadForAttempt}
+                  id="file-upload-attempt"
+                  style={{ display: 'none' }}
+                />
+                {currentSession.processFeedback ? (
+                  <button 
+                    className="regenerate-feedback-button"
+                    onClick={async () => {
+                      try {
+                        // Check if backend is available
+                        const useBackend = await checkBackendAvailable()
+                        
+                        if (!useBackend) {
+                          alert('Backend server is not running. Please start it to regenerate AI session feedback.')
+                          return
+                        }
+                        
+                        // Generate session feedback with Gemini
+                        const result = await generateSessionFeedbackAPI(currentSession.name, currentSession.id)
+                        await updateSession(currentSession.id, { processFeedback: result.feedback })
+                        await loadSession(currentSession.id)
+                        
+                        alert('Session feedback regenerated successfully!')
+                      } catch (err) {
+                        console.error('Error regenerating session feedback:', err)
+                        alert('Failed to regenerate session feedback: ' + err.message)
+                      }
+                    }}
+                  >
+                    Regenerate Feedback
+                  </button>
+                ) : (
+                  currentSession.attempts && currentSession.attempts.length > 0 && (
+                    <button 
+                      className="generate-feedback-button"
+                      onClick={async () => {
+                        try {
+                          // Check if backend is available
+                          const useBackend = await checkBackendAvailable()
+                          
+                          if (!useBackend) {
+                            alert('Backend server is not running. Please start it to generate AI session feedback.')
+                            return
+                          }
+                          
+                          // Generate session feedback with Gemini
+                          const result = await generateSessionFeedbackAPI(currentSession.name, currentSession.id)
+                          await updateSession(currentSession.id, { processFeedback: result.feedback })
+                          await loadSession(currentSession.id)
+                          
+                          alert('Session feedback generated successfully!')
+                        } catch (err) {
+                          console.error('Error generating session feedback:', err)
+                          alert('Failed to generate session feedback: ' + err.message)
+                        }
+                      }}
+                    >
+                      Generate Session Feedback
+                    </button>
+                  )
+                )}
+                <button 
+                  className="cta-button"
+                  onClick={() => handleNewAttempt(false)}
+                >
+                  + New Attempt (Upload PDF)
+                </button>
+                {currentSession.attempts && currentSession.attempts.length > 0 && (
+                  <button 
+                    className="cta-button secondary"
+                    onClick={() => handleNewAttempt(true)}
+                  >
+                    + New Attempt (Use Previous PDF)
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
+          
+          {/* Page Content - Bottom 3/4 */}
+          <div className="page-content">
+            <div className="session-page">
+              {/* Session Feedback Box (if exists) */}
+              {currentSession.processFeedback && (
+                <div className="session-feedback-box">
+                  <h3>Session Process Feedback</h3>
+                  <div className="session-feedback-content">
+                    {currentSession.processFeedback.split(/(?=\d+\.\s)/).filter(line => line.trim()).map((line, idx) => (
+                      <p key={idx}>{line.trim()}</p>
+                    ))}
+                  </div>
+                </div>
+              )}
 
           {currentSession.attempts && currentSession.attempts.length > 0 ? (
             <div className="attempts-list">
@@ -1324,7 +1262,7 @@ function App() {
                   onClick={() => handleSelectAttempt(attempt)}
                 >
                   <div className="attempt-info">
-                    <h4>Attempt {currentSession.attempts.length - currentSession.attempts.indexOf(attempt)}</h4>
+                    <h4>Attempt {currentSession.attempts.indexOf(attempt) + 1}</h4>
                     <p className="attempt-meta">
                       {formatDate(attempt.timestamp)} • {formatTime(attempt.duration || 0)}
                     </p>
@@ -1401,13 +1339,16 @@ function App() {
               <p>No attempts yet. Create your first attempt to start practicing!</p>
             </div>
           )}
+            </div>
+          </div>
         </div>
       </div>
     )
   }
 
-  // Attempt Viewer Page (PDF + Recording)
-  if (currentView === 'attempt') {
+  // Attempt Viewer Page (PDF + Recording) - for regular users and admin
+  // Allow rendering if we have a file (new attempt) OR currentAttempt (existing attempt)
+  if (currentView === 'attempt' && currentSession && (currentUser || isAdmin) && (file || currentAttempt)) {
     // Get attempt number if viewing a previous attempt
     let attemptNumber = null
     if (currentAttempt && currentSession && currentSession.attempts) {
@@ -1419,6 +1360,29 @@ function App() {
     
     return (
       <div className="App">
+        <Header 
+          onNavigateHome={handleNavigateHome}
+          onNavigateToSessions={handleNavigateToSessions}
+          onNavigateToProfile={handleNavigateToProfile}
+          currentView={currentView}
+          currentSession={currentSession}
+          totalSessions={sessions.length}
+          sessions={sessions}
+          onSelectSession={handleSelectSession}
+          currentUser={currentUser}
+          onSwitchUser={() => {
+            if (isAdmin) {
+              setIsAdmin(false)
+              setCurrentView('adminDashboard')
+            } else {
+              setCurrentUser(null)
+              setCurrentView('userSelection')
+            }
+            setCurrentSession(null)
+            setCurrentAttempt(null)
+          }}
+          onUpdateUserStats={handleUpdateUserStats}
+        />
         {/* Rating Form Modal */}
         {showRatingForm && (
           <div className="survey-overlay" onClick={() => setShowRatingForm(false)}>
@@ -1575,70 +1539,86 @@ function App() {
             </div>
           </div>
         )}
-        <div className="presentation-viewer">
-          {/* Header bar with session name, attempt number, and back button */}
-          {(currentSession || currentAttempt) && (
-            <div className="session-header">
-              <h2>
-                {currentSession?.name || 'Session'}
-                {attemptNumber && ` - Attempt ${attemptNumber}`}
-              </h2>
-              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                {currentAttempt && (
-                  <>
-                    <button
-                      className="analyze-button"
-                      onClick={async () => {
-                        if (currentAttempt && currentAttempt.id) {
-                          await handleAnalyzeAttempt(currentAttempt.id)
-                        }
-                      }}
-                      disabled={analyzing[currentAttempt?.id] || !pyodide}
-                      style={{ 
-                        padding: '0.75rem 1.5rem', 
-                        fontSize: '1rem',
-                        fontWeight: 600
-                      }}
-                    >
-                      {!pyodide ? 'Loading Python...' : analyzing[currentAttempt?.id] ? 'Analyzing...' : '📊 Analyze Attempt'}
-                    </button>
-                    <button
-                      className="analyze-button secondary"
-                      onClick={async () => {
-                        if (currentAttempt && currentAttempt.id) {
-                          await handleGenerateAIFeedback(currentAttempt.id)
-                        }
-                      }}
-                      disabled={analyzing[`ai_${currentAttempt?.id}`] || !currentAttempt.audioPath}
-                      title={!currentAttempt.audioPath ? 'Run full Analysis first' : 'Generate AI feedback using Gemini'}
-                      style={{ 
-                        padding: '0.75rem 1.5rem', 
-                        fontSize: '1rem',
-                        fontWeight: 600
-                      }}
-                    >
-                      {analyzing[`ai_${currentAttempt?.id}`] ? '⏳ Generating...' : '🤖 AI Feedback'}
-                    </button>
-                  </>
-                )}
+        <div className="main-content-card">
+          {/* Hero Section - Top 1/4 */}
+          <div className="hero-section">
+            <img src="/hero-image.png" alt="Hero" className="hero-image" />
+            <h1 className="hero-title">Presentation Rehearsal Coach</h1>
+            
+            {/* Admin Back Button Overlay - Top Right */}
+            {isAdmin && (
+              <div className="admin-back-overlay">
                 <button 
-                  className="back-button"
-                  onClick={async () => {
-                    if (currentSession) {
-                      await loadSession(currentSession.id)
-                      setCurrentView('session')
-                    } else {
-                      setCurrentView('sessionList')
-                    }
-                    setFile(null)
+                  className="admin-back-button"
+                  onClick={() => {
+                    setCurrentView('adminDashboard')
+                    setCurrentSession(null)
                     setCurrentAttempt(null)
                   }}
                 >
-                  ← Back to Session
+                  ← Back to Admin Dashboard
                 </button>
               </div>
-            </div>
-          )}
+            )}
+            
+            {/* Attempt Header Overlay */}
+            {(currentSession || currentAttempt) && (
+              <div className="attempt-header-overlay">
+                <h2>
+                  {currentSession?.name || 'Session'}
+                  {attemptNumber && ` - Attempt ${attemptNumber}`}
+                </h2>
+                <div className="attempt-actions-overlay">
+                  {currentAttempt && (
+                    <>
+                      <button
+                        className="analyze-button"
+                        onClick={async () => {
+                          if (currentAttempt && currentAttempt.id) {
+                            await handleAnalyzeAttempt(currentAttempt.id)
+                          }
+                        }}
+                        disabled={analyzing[currentAttempt?.id] || !pyodide}
+                      >
+                        {!pyodide ? 'Loading Python...' : analyzing[currentAttempt?.id] ? 'Analyzing...' : '📊 Analyze Attempt'}
+                      </button>
+                      <button
+                        className="analyze-button secondary"
+                        onClick={async () => {
+                          if (currentAttempt && currentAttempt.id) {
+                            await handleGenerateAIFeedback(currentAttempt.id)
+                          }
+                        }}
+                        disabled={analyzing[`ai_${currentAttempt?.id}`] || !currentAttempt.audioPath}
+                        title={!currentAttempt.audioPath ? 'Run full Analysis first' : 'Generate AI feedback using Gemini'}
+                      >
+                        {analyzing[`ai_${currentAttempt?.id}`] ? '⏳ Generating...' : '🤖 AI Feedback'}
+                      </button>
+                    </>
+                  )}
+                  <button 
+                    className="back-button"
+                    onClick={async () => {
+                      if (currentSession) {
+                        await loadSession(currentSession.id)
+                        setCurrentView('session')
+                      } else {
+                        setCurrentView('sessionList')
+                      }
+                      setFile(null)
+                      setCurrentAttempt(null)
+                    }}
+                  >
+                    ← Back to Session
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Page Content - Bottom 3/4 */}
+          <div className="page-content">
+            <div className="presentation-viewer">
 
           {!currentAttempt && (
             <>
@@ -1943,6 +1923,8 @@ function App() {
               )}
             </div>
           )}
+            </div>
+          </div>
         </div>
       </div>
     )
@@ -1950,11 +1932,6 @@ function App() {
 
   return (
     <div className="App">
-      <SurveyModal 
-        isOpen={showSurvey} 
-        onClose={handleSurveyCancel}
-        onSubmit={handleSurveySubmit}
-      />
       <div className="loading">Loading...</div>
     </div>
   )
