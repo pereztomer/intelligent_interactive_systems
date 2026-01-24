@@ -57,38 +57,38 @@ export const generateSpeakerProfile = (result) => {
 
   // Pacing Analysis
   if (avgWpm < 110) {
-    profile.pacing = `The speaker maintains a slow, deliberate pace. **${normalizedWpm.toFixed(1)}%**`
+    profile.pacing = `The speaker maintains a slow, deliberate pace.`
   } else if (avgWpm <= 140) {
-    profile.pacing = `The speaker communicates at an ideal conversational rate. **${normalizedWpm.toFixed(1)}%**`
+    profile.pacing = `The speaker communicates at an ideal conversational rate.`
   } else {
-    profile.pacing = `The delivery is rapid, suggesting high urgency. **${normalizedWpm.toFixed(1)}%**`
+    profile.pacing = `The delivery is rapid, suggesting high urgency.`
   }
 
   // Fluency Analysis
   if (speakingPct < 55) {
-    profile.fluency = `The speech is highly fragmented with long silences. **${speakingPct.toFixed(1)}%**`
+    profile.fluency = `The speech is highly fragmented with long silences.`
   } else if (speakingPct <= 75) {
-    profile.fluency = `The flow is natural with balanced pauses. **${speakingPct.toFixed(1)}%**`
+    profile.fluency = `The flow is natural with balanced pauses.`
   } else {
-    profile.fluency = `The speaker is exceptionally fluent with minimal interruptions. **${speakingPct.toFixed(1)}%**`
+    profile.fluency = `The speaker is exceptionally fluent with minimal interruptions.`
   }
 
   // Expressiveness Analysis
   if (avgPitchRange < 150) {
-    profile.expressiveness = `The vocal tone is relatively monotone. **${normalizedPitchRange.toFixed(1)}%**`
+    profile.expressiveness = `The vocal tone is relatively monotone.`
   } else if (avgPitchRange <= 250) {
-    profile.expressiveness = `The voice shows healthy modulation. **${normalizedPitchRange.toFixed(1)}%**`
+    profile.expressiveness = `The voice shows healthy modulation.`
   } else {
-    profile.expressiveness = `The speaker is highly dynamic, using a wide pitch range to emphasize points. **${normalizedPitchRange.toFixed(1)}%**`
+    profile.expressiveness = `The speaker is highly dynamic, using a wide pitch range to emphasize points.`
   }
 
   // Stability Analysis
   if (avgEnergyVar < 0.002) {
-    profile.stability = `The speaker exhibits exceptional vocal control, maintaining a very steady and professional volume. **${normalizedEnergyVar.toFixed(1)}%**`
+    profile.stability = `The speaker exhibits exceptional vocal control, maintaining a very steady and professional volume.`
   } else if (avgEnergyVar <= 0.007) {
-    profile.stability = `Volume levels are mostly consistent, with natural energy shifts that help maintain listener interest. **${normalizedEnergyVar.toFixed(1)}%**`
+    profile.stability = `Volume levels are mostly consistent, with natural energy shifts that help maintain listener interest.`
   } else {
-    profile.stability = `There are significant fluctuations in vocal energy, which may suggest inconsistent breath control or very intense emotional emphasis. **${normalizedEnergyVar.toFixed(1)}%**`
+    profile.stability = `There are significant fluctuations in vocal energy, which may suggest inconsistent breath control or very intense emotional emphasis.`
   }
 
   // Filler Words
@@ -99,6 +99,43 @@ export const generateSpeakerProfile = (result) => {
   }
 
   return profile
+}
+
+// Extract prosodic metrics as percentages for visualization
+export const extractProsodicMetrics = (result) => {
+  const normalized = normalizeAnalysisResult(result)
+  
+  let totalSpeechDuration = 0
+  let weightedWpmSum = 0
+  let weightedPitchRangeSum = 0
+  let weightedEnergyVarSum = 0
+
+  normalized.segments.forEach(seg => {
+    const dur = seg.duration
+    const features = seg.features
+
+    totalSpeechDuration += dur
+    weightedWpmSum += features.wordsPerMinute * dur
+    weightedPitchRangeSum += features.pitchRangeHz * dur
+    weightedEnergyVarSum += features.energyVariance * dur
+  })
+
+  const avgWpm = totalSpeechDuration > 0 ? weightedWpmSum / totalSpeechDuration : 0
+  const avgPitchRange = totalSpeechDuration > 0 ? weightedPitchRangeSum / totalSpeechDuration : 0
+  const avgEnergyVar = totalSpeechDuration > 0 ? weightedEnergyVarSum / totalSpeechDuration : 0
+  const speakingPct = normalized.speakingPercentage
+
+  // Normalize values to percentages (0-100)
+  const normalizedWpm = Math.min(100, (avgWpm / 200) * 100)
+  const normalizedPitchRange = Math.min(100, (avgPitchRange / 400) * 100)
+  const normalizedEnergyVar = Math.min(100, (avgEnergyVar / 0.015) * 100)
+
+  return {
+    pacing: parseFloat(normalizedWpm.toFixed(1)),
+    fluency: parseFloat(speakingPct.toFixed(1)),
+    expressiveness: parseFloat(normalizedPitchRange.toFixed(1)),
+    stability: parseFloat(normalizedEnergyVar.toFixed(1))
+  }
 }
 
 // Format Gemini feedback text

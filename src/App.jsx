@@ -31,7 +31,7 @@ import {
   saveFeedback as saveFeedbackAPI
 } from './utils/apiClient'
 import { extractAudioFromVideo } from './utils/audioProcessing'
-import { generateSpeakerProfile, formatGeminiFeedback, formatAnalysisResults } from './utils/analysisFormatting'
+import { generateSpeakerProfile, formatGeminiFeedback, formatAnalysisResults, extractProsodicMetrics } from './utils/analysisFormatting'
 import { formatTime, formatDate } from './utils/formatting'
 
 // Set up PDF.js worker
@@ -773,12 +773,14 @@ function App() {
         // Format results for display
         const geminiFeedback = formatGeminiFeedback(result)
         const analysisResults = formatAnalysisResults(result)
+        const prosodicMetrics = extractProsodicMetrics(result)
         
-        // Save both feedbacks separately along with transcription segments
+        // Save both feedbacks separately along with transcription segments and metrics
         await updateAttempt(attemptId, { 
           geminiFeedback: geminiFeedback,
           analysisResults: analysisResults,
-          transcriptionSegments: result.transcriptionSegments || null
+          transcriptionSegments: result.transcriptionSegments || null,
+          prosodicMetrics: prosodicMetrics
         })
         await loadSession(currentSession.id)
         
@@ -1884,8 +1886,8 @@ function App() {
               )}
               
               {/* 2.5. Prosodic Features Diagram */}
-              {currentAttempt.analysisResults && (
-                <ProsodicDiagram analysisResult={currentAttempt.analysisResults} />
+              {currentAttempt.prosodicMetrics && (
+                <ProsodicDiagram prosodicMetrics={currentAttempt.prosodicMetrics} />
               )}
               
               {/* 3. Analysis Results Third */}

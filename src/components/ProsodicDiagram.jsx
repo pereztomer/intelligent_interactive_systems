@@ -1,39 +1,11 @@
 import React from 'react'
 import './ProsodicDiagram.css'
 
-const ProsodicDiagram = ({ analysisResult }) => {
-  if (!analysisResult) return null
+const ProsodicDiagram = ({ prosodicMetrics }) => {
+  if (!prosodicMetrics) return null
 
-  // Parse the analysisResult string to extract the metrics
-  const parseMetrics = (text) => {
-    const metrics = {
-      pacing: 0,
-      fluency: 0,
-      expressiveness: 0,
-      stability: 0
-    }
-
-    const lines = text.split('\n')
-    lines.forEach(line => {
-      const match = line.match(/\*\*(\d+\.?\d*)%\*\*/)
-      if (match) {
-        const value = parseFloat(match[1])
-        if (line.includes('Pacing:')) {
-          metrics.pacing = value
-        } else if (line.includes('Fluency:')) {
-          metrics.fluency = value
-        } else if (line.includes('Expressiveness:')) {
-          metrics.expressiveness = value
-        } else if (line.includes('Stability:')) {
-          metrics.stability = value
-        }
-      }
-    })
-
-    return metrics
-  }
-
-  const metrics = parseMetrics(analysisResult)
+  // Use the metrics directly
+  const metrics = prosodicMetrics
 
   // Define metric configurations with colors and labels
   const metricConfig = [
