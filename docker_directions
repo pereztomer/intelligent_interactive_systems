@@ -1,0 +1,11 @@
+# Build image
+docker build -t intelligent-systems .
+
+# Save image
+docker save intelligent-systems > app.tar
+
+# Load image (on another machine)
+docker load < app.tar
+
+# Run container
+docker run -p 5000:5000 intelligent-systems

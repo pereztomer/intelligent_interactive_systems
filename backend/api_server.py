@@ -3,7 +3,7 @@ Flask API server for presentation analysis
 Receives audio data from browser and returns analysis results
 """
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import base64
 import tempfile
@@ -64,6 +64,16 @@ def extract_pdf_content(pdf_path):
     except Exception as e:
         print(f"❌ PDF extraction error: {str(e)}")
         return []
+
+# Serve static files from dist (built frontend)
+dist_path = project_root / 'dist'
+if dist_path.exists():
+    @app.route('/', defaults={'path': ''})
+    @app.route('/<path:path>')
+    def serve_frontend(path):
+        if path and (dist_path / path).exists():
+            return send_from_directory(str(dist_path), path)
+        return send_from_directory(str(dist_path), 'index.html')
 
 @app.route('/health', methods=['GET'])
 def health():
@@ -469,4 +479,4 @@ if __name__ == '__main__':
     print("  POST /session_feedback - Generate session-level AI feedback")
     print("\n" + "="*80)
     
-    app.run(host='localhost', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=False)
