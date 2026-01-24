@@ -10,6 +10,7 @@ import CreateUserPage from './components/CreateUserPage'
 import ProfilePage from './components/ProfilePage'
 import AdminLogin from './components/AdminLogin'
 import AdminDashboard from './components/AdminDashboard'
+import ProsodicDiagram from './components/ProsodicDiagram'
 import { 
   createSession, 
   getAllSessions, 
@@ -1880,6 +1881,11 @@ function App() {
                     ))}
                   </div>
                 </div>
+              )}
+              
+              {/* 2.5. Prosodic Features Diagram */}
+              {currentAttempt.analysisResults && (
+                <ProsodicDiagram analysisResult={currentAttempt.analysisResults} />
               )}
               
               {/* 3. Analysis Results Third */}
