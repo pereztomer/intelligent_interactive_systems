@@ -12,6 +12,7 @@ import AdminLogin from './components/AdminLogin'
 import AdminDashboard from './components/AdminDashboard'
 import ProsodicDiagram from './components/ProsodicDiagram'
 import SessionDiagram from './components/SessionDiagram'
+import UserProfileDiagram from './components/UserProfileDiagram'
 import { 
   createSession, 
   getAllSessions, 
@@ -78,6 +79,7 @@ function App() {
   // Analysis state
   const [pyodide, setPyodide] = useState(null)
   const [analyzing, setAnalyzing] = useState({})
+  const [showSpeakerProfile, setShowSpeakerProfile] = useState(false)
   const [generatingSessionFeedback, setGeneratingSessionFeedback] = useState(false)
   
   // Session popup state
@@ -619,6 +621,10 @@ function App() {
     setCurrentView('profile')
   }
 
+  const handleOpenSpeakerProfile = () => {
+    setShowSpeakerProfile(true)
+  }
+
   // Handle admin login
   const handleAdminLogin = () => {
     setIsAdmin(true)
@@ -875,6 +881,35 @@ function App() {
 
   // ========== VIEW RENDERS ==========
 
+  // Speaker Profile Modal (reusable across views)
+  const renderSpeakerProfileModal = () => {
+    if (!showSpeakerProfile) return null
+    
+    return (
+      <div className="survey-overlay" onClick={() => setShowSpeakerProfile(false)}>
+        <div className="survey-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+          <button 
+            onClick={() => setShowSpeakerProfile(false)}
+            style={{
+              position: 'absolute',
+              top: '20px',
+              right: '20px',
+              background: 'none',
+              border: 'none',
+              fontSize: '24px',
+              cursor: 'pointer',
+              color: '#666',
+              zIndex: 10
+            }}
+          >
+            ×
+          </button>
+          <UserProfileDiagram sessions={sessions} userName={currentUser?.name || 'User'} />
+        </div>
+      </div>
+    )
+  }
+
   // Admin Login Page
   if (currentView === 'adminLogin') {
     return (
@@ -946,7 +981,9 @@ function App() {
             setCurrentAttempt(null)
           }}
           onUpdateUserStats={handleUpdateUserStats}
+          onOpenSpeakerProfile={handleOpenSpeakerProfile}
         />
+        {renderSpeakerProfileModal()}
         <div className="main-content-card">
           {/* Hero Section - Top 1/4 */}
           <div className="hero-section">
@@ -1008,7 +1045,9 @@ function App() {
             setCurrentSession(null)
             setCurrentAttempt(null)
           }}
+          onOpenSpeakerProfile={handleOpenSpeakerProfile}
         />
+        {renderSpeakerProfileModal()}
         <ProfilePage 
           currentUser={currentUser}
           onUpdateUserStats={handleUpdateUserStats}
@@ -1038,7 +1077,9 @@ function App() {
             setCurrentAttempt(null)
           }}
           onUpdateUserStats={handleUpdateUserStats}
+          onOpenSpeakerProfile={handleOpenSpeakerProfile}
         />
+        {renderSpeakerProfileModal()}
         <div className="main-content-card">
           {/* Hero Section - Top 1/4 */}
           <div className="hero-section">
@@ -1133,7 +1174,9 @@ function App() {
             setCurrentAttempt(null)
           }}
           onUpdateUserStats={handleUpdateUserStats}
+          onOpenSpeakerProfile={handleOpenSpeakerProfile}
         />
+        {renderSpeakerProfileModal()}
         <div className="main-content-card">
           {/* Hero Section - Top 1/4 */}
           <div className="hero-section">
@@ -1560,7 +1603,9 @@ function App() {
             setCurrentAttempt(null)
           }}
           onUpdateUserStats={handleUpdateUserStats}
+          onOpenSpeakerProfile={handleOpenSpeakerProfile}
         />
+        {renderSpeakerProfileModal()}
         {/* Rating Form Modal */}
         {showRatingForm && (
           <div className="survey-overlay" onClick={() => setShowRatingForm(false)}>

@@ -1,0 +1,87 @@
+.user-profile-diagram-container {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 16px;
+  padding: 30px;
+  color: white;
+  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+}
+
+.user-profile-diagram-container h3 {
+  margin: 0 0 10px 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.profile-subtitle {
+  text-align: center;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0 0 25px 0;
+  font-style: italic;
+}
+
+.radar-chart-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  padding: 20px;
+  margin: 20px 0;
+}
+
+.radar-chart {
+  display: block;
+}
+
+.radar-chart circle {
+  transition: r 0.3s ease;
+  cursor: pointer;
+}
+
+.radar-chart circle:hover {
+  r: 7;
+}
+
+.profile-metrics-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.profile-metric-item {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.profile-metric-item .metric-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.profile-metric-item .metric-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #ffd700;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .user-profile-diagram-container {
+    padding: 20px;
+  }
+
+  .profile-metrics-list {
+    grid-template-columns: 1fr;
+  }
+}

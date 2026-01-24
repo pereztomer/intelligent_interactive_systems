@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import './Header.css'
 
-function Header({ onNavigateHome, onNavigateToSessions, onNavigateToProfile, currentView, currentSession, totalSessions, sessions = [], onSelectSession, currentUser, onSwitchUser }) {
+function Header({ onNavigateHome, onNavigateToSessions, onNavigateToProfile, currentView, currentSession, totalSessions, sessions = [], onSelectSession, currentUser, onSwitchUser, onOpenSpeakerProfile }) {
   const [isExpanded, setIsExpanded] = useState(false)
   const INITIAL_DISPLAY_COUNT = 3
   
@@ -54,6 +54,15 @@ function Header({ onNavigateHome, onNavigateToSessions, onNavigateToProfile, cur
       </nav>
 
       <div className="sidebar-context">
+        {currentUser && (
+          <button 
+            className="sidebar-link speaker-profile-card"
+            onClick={onOpenSpeakerProfile}
+            style={{ marginBottom: '0.5rem', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', fontWeight: '600' }}
+          >
+            👤 Speaker Profile
+          </button>
+        )}
         {currentUser?.surveyData && (
           <button 
             className={`sidebar-link ${currentView === 'profile' ? 'active' : ''}`}
