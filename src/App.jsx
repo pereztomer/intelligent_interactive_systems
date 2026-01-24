@@ -78,6 +78,7 @@ function App() {
   // Analysis state
   const [pyodide, setPyodide] = useState(null)
   const [analyzing, setAnalyzing] = useState({})
+  const [generatingSessionFeedback, setGeneratingSessionFeedback] = useState(false)
   
   // Session popup state
   const [activePopup, setActivePopup] = useState(null) // 'feedback', 'diagram', 'attempts'
@@ -1170,16 +1171,17 @@ function App() {
                   id="file-upload-attempt"
                   style={{ display: 'none' }}
                 />
-                {currentSession.processFeedback ? (
+                {currentSession.attempts && currentSession.attempts.length > 0 && (
                   <button 
-                    className="regenerate-feedback-button"
+                    className="generate-feedback-button"
                     onClick={async () => {
                       try {
+                        setGeneratingSessionFeedback(true)
                         // Check if backend is available
                         const useBackend = await checkBackendAvailable()
                         
                         if (!useBackend) {
-                          alert('Backend server is not running. Please start it to regenerate AI session feedback.')
+                          alert('Backend server is not running. Please start it to generate AI session feedback.')
                           return
                         }
                         
@@ -1188,44 +1190,18 @@ function App() {
                         await updateSession(currentSession.id, { processFeedback: result.feedback })
                         await loadSession(currentSession.id)
                         
-                        alert('Session feedback regenerated successfully!')
+                        alert('Session feedback generated successfully!')
                       } catch (err) {
-                        console.error('Error regenerating session feedback:', err)
-                        alert('Failed to regenerate session feedback: ' + err.message)
+                        console.error('Error generating session feedback:', err)
+                        alert('Failed to generate session feedback: ' + err.message)
+                      } finally {
+                        setGeneratingSessionFeedback(false)
                       }
                     }}
+                    disabled={generatingSessionFeedback}
                   >
-                    Regenerate Feedback
+                    {generatingSessionFeedback ? '⏳ Generating...' : 'Generate Session Feedback'}
                   </button>
-                ) : (
-                  currentSession.attempts && currentSession.attempts.length > 0 && (
-                    <button 
-                      className="generate-feedback-button"
-                      onClick={async () => {
-                        try {
-                          // Check if backend is available
-                          const useBackend = await checkBackendAvailable()
-                          
-                          if (!useBackend) {
-                            alert('Backend server is not running. Please start it to generate AI session feedback.')
-                            return
-                          }
-                          
-                          // Generate session feedback with Gemini
-                          const result = await generateSessionFeedbackAPI(currentSession.name, currentSession.id)
-                          await updateSession(currentSession.id, { processFeedback: result.feedback })
-                          await loadSession(currentSession.id)
-                          
-                          alert('Session feedback generated successfully!')
-                        } catch (err) {
-                          console.error('Error generating session feedback:', err)
-                          alert('Failed to generate session feedback: ' + err.message)
-                        }
-                      }}
-                    >
-                      Generate Session Feedback
-                    </button>
-                  )
                 )}
                 <button 
                   className="cta-button"
