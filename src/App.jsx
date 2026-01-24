@@ -11,6 +11,7 @@ import ProfilePage from './components/ProfilePage'
 import AdminLogin from './components/AdminLogin'
 import AdminDashboard from './components/AdminDashboard'
 import ProsodicDiagram from './components/ProsodicDiagram'
+import SessionDiagram from './components/SessionDiagram'
 import { 
   createSession, 
   getAllSessions, 
@@ -1254,6 +1255,11 @@ function App() {
                     ))}
                   </div>
                 </div>
+              )}
+
+              {/* Session Progress Diagram */}
+              {currentSession.attempts && currentSession.attempts.length > 0 && (
+                <SessionDiagram attempts={currentSession.attempts} />
               )}
 
           {currentSession.attempts && currentSession.attempts.length > 0 ? (
