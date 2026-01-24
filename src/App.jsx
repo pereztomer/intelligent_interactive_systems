@@ -1365,8 +1365,10 @@ function App() {
                     <div className="session-feedback-box" style={{ margin: 0 }}>
                       <h3>Session Process Feedback</h3>
                       <div className="session-feedback-content">
-                        {currentSession.processFeedback.split(/(?=\d+\.\s)/).filter(line => line.trim()).map((line, idx) => (
-                          <p key={idx}>{line.trim()}</p>
+                        {currentSession.processFeedback.split(/(?:(?<=\.)\s*-\s*|(?=\d+\.\s)|-\s+(?=[A-Z]))/).filter(line => line.trim()).map((line, idx) => (
+                          <p key={idx} style={{ marginBottom: '1rem', lineHeight: '1.6' }}>
+                            {line.trim().startsWith('-') ? line.trim() : line.trim()}
+                          </p>
                         ))}
                       </div>
                     </div>

@@ -111,7 +111,7 @@ TIMING:
 [1-2 bullet points analyzing time management]
 
 IMPROVEMENT & PRESERVATION:
-[4 bullet points (2 improvement, 2 preservation)]
+[2 bullet points (1 improvement, 1 preservation)]
 
 Pay attention, your answers needs to be in a short format, unless there is a really good reason to be a little bit longer.
 """
@@ -166,8 +166,7 @@ ATTEMPT FEEDBACKS:
         prompt += f"\n--- Attempt {i} ({fb['attempt']}) ---\n{fb['feedback']}\n"
     
     prompt += f"""
-Provide VERY SHORT session-level analysis: exactly 2-3 main points, each point a single short sentence.
-Focus on:
+Provide session-level analysis: exactly 3 main points, each point a single sentence.
 - Overall improvement trends
 - Persistent issues
 - Key recommendations
