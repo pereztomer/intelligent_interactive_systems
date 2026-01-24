@@ -1924,85 +1924,375 @@ function App() {
 
           {currentAttempt && (
             <div className="attempt-details-section">
-              {/* 1. Gemini Feedback First */}
-              {currentAttempt.geminiFeedback && (
-                <div className="attempt-feedback-box">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <h3 style={{ margin: 0 }}>🤖 AI Presentation Coach Feedback</h3>
+              {/* Four Main Cards */}
+              <div className="attempt-cards-container" style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(4, 1fr)',
+                gap: '1.5rem',
+                padding: '1.5rem',
+                marginBottom: '2rem'
+              }}>
+                {/* Card 1: AI Feedback */}
+                <div 
+                  className="attempt-card"
+                  onClick={() => currentAttempt.geminiFeedback && setActivePopup('aiFeedback')}
+                  style={{
+                    backgroundColor: '#f8f9fa',
+                    border: '2px solid #dee2e6',
+                    borderRadius: '12px',
+                    padding: '1.5rem',
+                    cursor: currentAttempt.geminiFeedback ? 'pointer' : 'not-allowed',
+                    opacity: currentAttempt.geminiFeedback ? 1 : 0.5,
+                    transition: 'transform 0.2s, box-shadow 0.2s',
+                    textAlign: 'center',
+                    minHeight: '150px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (currentAttempt.geminiFeedback) {
+                      e.currentTarget.style.transform = 'translateY(-5px)'
+                      e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.15)'
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)'
+                    e.currentTarget.style.boxShadow = 'none'
+                  }}
+                >
+                  <div style={{ fontSize: '36px', marginBottom: '0.5rem' }}>🤖</div>
+                  <h4 style={{ margin: '0 0 0.3rem 0', fontSize: '1rem' }}>AI Feedback</h4>
+                  <p style={{ color: '#666', fontSize: '12px', margin: 0 }}>
+                    {currentAttempt.geminiFeedback ? 'Click to view' : 'Not available'}
+                  </p>
+                </div>
+
+                {/* Card 2: Voice Metrics */}
+                <div 
+                  className="attempt-card"
+                  onClick={() => currentAttempt.prosodicMetrics && setActivePopup('voiceMetrics')}
+                  style={{
+                    backgroundColor: '#f8f9fa',
+                    border: '2px solid #dee2e6',
+                    borderRadius: '12px',
+                    padding: '1.5rem',
+                    cursor: currentAttempt.prosodicMetrics ? 'pointer' : 'not-allowed',
+                    opacity: currentAttempt.prosodicMetrics ? 1 : 0.5,
+                    transition: 'transform 0.2s, box-shadow 0.2s',
+                    textAlign: 'center',
+                    minHeight: '150px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (currentAttempt.prosodicMetrics) {
+                      e.currentTarget.style.transform = 'translateY(-5px)'
+                      e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.15)'
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)'
+                    e.currentTarget.style.boxShadow = 'none'
+                  }}
+                >
+                  <div style={{ fontSize: '36px', marginBottom: '0.5rem' }}>📊</div>
+                  <h4 style={{ margin: '0 0 0.3rem 0', fontSize: '1rem' }}>Voice Metrics</h4>
+                  <p style={{ color: '#666', fontSize: '12px', margin: 0 }}>
+                    {currentAttempt.prosodicMetrics ? 'Click to view' : 'Not available'}
+                  </p>
+                </div>
+
+                {/* Card 3: Analysis Results */}
+                <div 
+                  className="attempt-card"
+                  onClick={() => currentAttempt.analysisResults && setActivePopup('analysisResults')}
+                  style={{
+                    backgroundColor: '#f8f9fa',
+                    border: '2px solid #dee2e6',
+                    borderRadius: '12px',
+                    padding: '1.5rem',
+                    cursor: currentAttempt.analysisResults ? 'pointer' : 'not-allowed',
+                    opacity: currentAttempt.analysisResults ? 1 : 0.5,
+                    transition: 'transform 0.2s, box-shadow 0.2s',
+                    textAlign: 'center',
+                    minHeight: '150px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (currentAttempt.analysisResults) {
+                      e.currentTarget.style.transform = 'translateY(-5px)'
+                      e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.15)'
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)'
+                    e.currentTarget.style.boxShadow = 'none'
+                  }}
+                >
+                  <div style={{ fontSize: '36px', marginBottom: '0.5rem' }}>📋</div>
+                  <h4 style={{ margin: '0 0 0.3rem 0', fontSize: '1rem' }}>Analysis Results</h4>
+                  <p style={{ color: '#666', fontSize: '12px', margin: 0 }}>
+                    {currentAttempt.analysisResults ? 'Click to view' : 'Not available'}
+                  </p>
+                </div>
+
+                {/* Card 4: Navigation Timeline */}
+                <div 
+                  className="attempt-card"
+                  onClick={() => currentAttempt.navigationEvents?.length > 0 && setActivePopup('navigation')}
+                  style={{
+                    backgroundColor: '#f8f9fa',
+                    border: '2px solid #dee2e6',
+                    borderRadius: '12px',
+                    padding: '1.5rem',
+                    cursor: currentAttempt.navigationEvents?.length > 0 ? 'pointer' : 'not-allowed',
+                    opacity: currentAttempt.navigationEvents?.length > 0 ? 1 : 0.5,
+                    transition: 'transform 0.2s, box-shadow 0.2s',
+                    textAlign: 'center',
+                    minHeight: '150px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (currentAttempt.navigationEvents?.length > 0) {
+                      e.currentTarget.style.transform = 'translateY(-5px)'
+                      e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.15)'
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)'
+                    e.currentTarget.style.boxShadow = 'none'
+                  }}
+                >
+                  <div style={{ fontSize: '36px', marginBottom: '0.5rem' }}>📄</div>
+                  <h4 style={{ margin: '0 0 0.3rem 0', fontSize: '1rem' }}>Navigation Timeline</h4>
+                  <p style={{ color: '#666', fontSize: '12px', margin: 0 }}>
+                    {currentAttempt.navigationEvents?.length > 0 ? 'Click to view' : 'Not available'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Popup: AI Feedback */}
+              {activePopup === 'aiFeedback' && currentAttempt.geminiFeedback && (
+                <div className="survey-overlay" onClick={() => setActivePopup(null)} style={{ zIndex: 1000 }}>
+                  <div className="survey-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '900px', maxHeight: '85vh', overflow: 'auto' }}>
                     <button 
-                      className="rate-feedback-button"
-                      onClick={() => setShowRatingForm(true)}
+                      onClick={() => setActivePopup(null)}
                       style={{
-                        padding: '8px 16px',
-                        backgroundColor: '#007bff',
-                        color: 'white',
+                        position: 'absolute',
+                        top: '20px',
+                        right: '20px',
+                        background: 'none',
                         border: 'none',
-                        borderRadius: '6px',
+                        fontSize: '32px',
                         cursor: 'pointer',
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        transition: 'background-color 0.3s'
+                        color: '#666',
+                        lineHeight: '1',
+                        zIndex: 10
                       }}
-                      onMouseEnter={(e) => e.target.style.backgroundColor = '#0056b3'}
-                      onMouseLeave={(e) => e.target.style.backgroundColor = '#007bff'}
                     >
-                      Rate me 😊
+                      ×
                     </button>
-                  </div>
-                  <div style={{ lineHeight: '1.8' }}>
-                    {(() => {
-                      const sections = formatGeminiFeedbackHTML(currentAttempt.geminiFeedback)
-                      if (!sections) {
-                        return <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>{currentAttempt.geminiFeedback}</pre>
-                      }
-                      
-                      return sections.map((section, idx) => (
-                        <div key={idx} style={{ marginBottom: '2rem' }}>
-                          <h2 style={{ 
-                            fontSize: '1.5rem', 
-                            fontWeight: 'bold', 
-                            marginBottom: '1rem',
-                            color: '#2c3e50',
-                            borderBottom: '2px solid #3498db',
-                            paddingBottom: '0.5rem'
-                          }}>
-                            {section.header}
-                          </h2>
-                          <div style={{ paddingLeft: '1rem' }}>
-                            {section.items.map((item, itemIdx) => {
-                              if (item.label) {
-                                return (
-                                  <div key={itemIdx} style={{ marginBottom: '1.5rem' }}>
-                                    <p style={{ 
-                                      marginBottom: '0.5rem',
+                    <div className="attempt-feedback-box" style={{ margin: 0 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                        <h3 style={{ margin: 0 }}>🤖 AI Presentation Coach Feedback</h3>
+                        <button 
+                          className="rate-feedback-button"
+                          onClick={() => {
+                            setActivePopup(null)
+                            setShowRatingForm(true)
+                          }}
+                          style={{
+                            padding: '8px 16px',
+                            backgroundColor: '#007bff',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            fontWeight: '600',
+                            transition: 'background-color 0.3s'
+                          }}
+                          onMouseEnter={(e) => e.target.style.backgroundColor = '#0056b3'}
+                          onMouseLeave={(e) => e.target.style.backgroundColor = '#007bff'}
+                        >
+                          Rate me 😊
+                        </button>
+                      </div>
+                      <div style={{ lineHeight: '1.8' }}>
+                        {(() => {
+                          const sections = formatGeminiFeedbackHTML(currentAttempt.geminiFeedback)
+                          if (!sections) {
+                            return <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>{currentAttempt.geminiFeedback}</pre>
+                          }
+                          
+                          return sections.map((section, idx) => (
+                            <div key={idx} style={{ marginBottom: '2rem' }}>
+                              <h2 style={{ 
+                                fontSize: '1.5rem', 
+                                fontWeight: 'bold', 
+                                marginBottom: '1rem',
+                                color: '#2c3e50',
+                                borderBottom: '2px solid #3498db',
+                                paddingBottom: '0.5rem'
+                              }}>
+                                {section.header}
+                              </h2>
+                              <div style={{ paddingLeft: '1rem' }}>
+                                {section.items.map((item, itemIdx) => {
+                                  if (item.label) {
+                                    return (
+                                      <div key={itemIdx} style={{ marginBottom: '1.5rem' }}>
+                                        <p style={{ 
+                                          marginBottom: '0.5rem',
+                                          fontSize: '1rem',
+                                          color: '#34495e'
+                                        }}>
+                                          <strong>{item.label}:</strong> {item.content.join(' ')}
+                                        </p>
+                                      </div>
+                                    )
+                                  }
+                                  
+                                  return (
+                                    <p key={itemIdx} style={{ 
+                                      marginBottom: '0.75rem',
                                       fontSize: '1rem',
                                       color: '#34495e'
                                     }}>
-                                      <strong>{item.label}:</strong> {item.content.join(' ')}
+                                      {item.content.join(' ')}
                                     </p>
-                                  </div>
-                                )
-                              }
-                              
-                              return (
-                                <p key={itemIdx} style={{ 
-                                  marginBottom: '0.75rem',
-                                  fontSize: '1rem',
-                                  color: '#34495e'
-                                }}>
-                                  {item.content.join(' ')}
-                                </p>
-                              )
-                            })}
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          ))
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Popup: Voice Metrics */}
+              {activePopup === 'voiceMetrics' && currentAttempt.prosodicMetrics && (
+                <div className="survey-overlay" onClick={() => setActivePopup(null)} style={{ zIndex: 1000 }}>
+                  <div className="survey-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '1000px', maxHeight: '85vh', overflow: 'auto' }}>
+                    <button 
+                      onClick={() => setActivePopup(null)}
+                      style={{
+                        position: 'absolute',
+                        top: '20px',
+                        right: '20px',
+                        background: 'none',
+                        border: 'none',
+                        fontSize: '32px',
+                        cursor: 'pointer',
+                        color: '#666',
+                        lineHeight: '1',
+                        zIndex: 10
+                      }}
+                    >
+                      ×
+                    </button>
+                    <ProsodicDiagram prosodicMetrics={currentAttempt.prosodicMetrics} />
+                  </div>
+                </div>
+              )}
+
+              {/* Popup: Analysis Results */}
+              {activePopup === 'analysisResults' && currentAttempt.analysisResults && (
+                <div className="survey-overlay" onClick={() => setActivePopup(null)} style={{ zIndex: 1000 }}>
+                  <div className="survey-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '800px', maxHeight: '85vh', overflow: 'auto' }}>
+                    <button 
+                      onClick={() => setActivePopup(null)}
+                      style={{
+                        position: 'absolute',
+                        top: '20px',
+                        right: '20px',
+                        background: 'none',
+                        border: 'none',
+                        fontSize: '32px',
+                        cursor: 'pointer',
+                        color: '#666',
+                        lineHeight: '1',
+                        zIndex: 10
+                      }}
+                    >
+                      ×
+                    </button>
+                    <div className="attempt-feedback-box" style={{ margin: 0 }}>
+                      <h3>Analysis Results</h3>
+                      <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>
+                        {currentAttempt.analysisResults}
+                      </pre>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Popup: Navigation Timeline */}
+              {activePopup === 'navigation' && currentAttempt.navigationEvents?.length > 0 && (
+                <div className="survey-overlay" onClick={() => setActivePopup(null)} style={{ zIndex: 1000 }}>
+                  <div className="survey-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '800px', maxHeight: '85vh', overflow: 'auto' }}>
+                    <button 
+                      onClick={() => setActivePopup(null)}
+                      style={{
+                        position: 'absolute',
+                        top: '20px',
+                        right: '20px',
+                        background: 'none',
+                        border: 'none',
+                        fontSize: '32px',
+                        cursor: 'pointer',
+                        color: '#666',
+                        lineHeight: '1',
+                        zIndex: 10
+                      }}
+                    >
+                      ×
+                    </button>
+                    <div className="navigation-tracking-box" style={{ margin: 0 }}>
+                      <h3>📄 Page Navigation Timeline</h3>
+                      <div className="navigation-events">
+                        {currentAttempt.navigationEvents.map((event, idx) => (
+                          <div key={idx} className="navigation-event">
+                            <div className="event-time">{formatTime(event.timestamp)}</div>
+                            <div className="event-details">
+                              {event.method === 'start' ? (
+                                <>
+                                  <strong>Started on Page {event.toPage}</strong>
+                                </>
+                              ) : (
+                                <>
+                                  <strong>Page {event.fromPage} → {event.toPage}</strong>
+                                  <span className="event-method">via {event.method}</span>
+                                  {event.duration > 0 && (
+                                    <span className="event-duration">
+                                      (spent {formatTime(event.duration)} on page {event.fromPage})
+                                    </span>
+                                  )}
+                                </>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      ))
-                    })()}
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
               
-              {/* 2. Video Second */}
+              {/* 2. Video Second - Keep as is */}
               {currentAttempt.videoData && (
                 <div className="attempt-video-player">
                   <h3>Recording</h3>
@@ -2075,52 +2365,6 @@ function App() {
                         ) : (
                           <span>{seg.text}</span>
                         )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {/* 2.5. Prosodic Features Diagram */}
-              {currentAttempt.prosodicMetrics && (
-                <ProsodicDiagram prosodicMetrics={currentAttempt.prosodicMetrics} />
-              )}
-              
-              {/* 3. Analysis Results Third */}
-              {currentAttempt.analysisResults && (
-                <div className="attempt-feedback-box">
-                  <h3>Analysis Results</h3>
-                  <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>
-                    {currentAttempt.analysisResults}
-                  </pre>
-                </div>
-              )}
-              
-              {/* 4. Navigation Feedback Last */}
-              {currentAttempt.navigationEvents && currentAttempt.navigationEvents.length > 0 && (
-                <div className="navigation-tracking-box">
-                  <h3>📄 Page Navigation Timeline</h3>
-                  <div className="navigation-events">
-                    {currentAttempt.navigationEvents.map((event, idx) => (
-                      <div key={idx} className="navigation-event">
-                        <div className="event-time">{formatTime(event.timestamp)}</div>
-                        <div className="event-details">
-                          {event.method === 'start' ? (
-                            <>
-                              <strong>Started on Page {event.toPage}</strong>
-                            </>
-                          ) : (
-                            <>
-                              <strong>Page {event.fromPage} → {event.toPage}</strong>
-                              <span className="event-method">via {event.method}</span>
-                              {event.duration > 0 && (
-                                <span className="event-duration">
-                                  (spent {formatTime(event.duration)} on page {event.fromPage})
-                                </span>
-                              )}
-                            </>
-                          )}
-                        </div>
                       </div>
                     ))}
                   </div>
