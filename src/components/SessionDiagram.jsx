@@ -1,7 +1,9 @@
-import React from 'react'
+import React, { useState } from 'react'
 import './SessionDiagram.css'
 
 const SessionDiagram = ({ attempts }) => {
+  const [selectedMetric, setSelectedMetric] = useState(null)
+  
   // Filter attempts that have prosodic metrics
   const attemptsWithMetrics = attempts
     .filter(attempt => attempt.prosodicMetrics)
@@ -125,6 +127,8 @@ const SessionDiagram = ({ attempts }) => {
                 strokeWidth="3"
                 strokeLinejoin="round"
                 strokeLinecap="round"
+                opacity={selectedMetric === null || selectedMetric === config.key ? 1 : 0.15}
+                style={{ transition: 'opacity 0.3s ease, stroke-width 0.3s ease' }}
               />
               {/* Points */}
               {attemptsWithMetrics.map((attempt, index) => (
@@ -136,6 +140,8 @@ const SessionDiagram = ({ attempts }) => {
                     fill={config.color}
                     stroke="white"
                     strokeWidth="2"
+                    opacity={selectedMetric === null || selectedMetric === config.key ? 1 : 0.15}
+                    style={{ transition: 'opacity 0.3s ease, r 0.3s ease' }}
                   />
                   {/* Value label on hover */}
                   <title>
@@ -153,7 +159,16 @@ const SessionDiagram = ({ attempts }) => {
         {metricConfig.map((config) => {
           const improvement = calculateImprovement(config.key)
           return (
-            <div key={config.key} className="metric-summary-item">
+            <div 
+              key={config.key} 
+              className={`metric-summary-item ${selectedMetric === config.key ? 'selected' : ''}`}
+              onClick={() => setSelectedMetric(selectedMetric === config.key ? null : config.key)}
+              style={{
+                cursor: 'pointer',
+                opacity: selectedMetric === null || selectedMetric === config.key ? 1 : 0.4,
+                transform: selectedMetric === config.key ? 'scale(1.05)' : 'scale(1)'
+              }}
+            >
               <div className="metric-summary-header">
                 <span className="metric-icon">{config.icon}</span>
                 <span className="metric-label" style={{ color: config.color }}>
