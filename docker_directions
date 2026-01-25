@@ -1,13 +1,17 @@
-# Build image
-docker build -t intelligent-systems .
+# Build image with correct naming for Docker Hub
+docker build -t tomerperetz1234/intelligent-systems:latest .
 
-# Save image
-docker save intelligent-systems > app.tar
+# Push to Docker Hub
+docker push tomerperetz1234/intelligent-systems:latest
 
-# Load image (on another machine)
-docker load < app.tar
+# ============================================
+# On another machine:
+# ============================================
+
+# Pull image from Docker Hub
+docker pull tomerperetz1234/intelligent-systems:latest
 
 # Run container
-docker run -p 5000:5000 intelligent-systems
+docker run -p 5000:5000 tomerperetz1234/intelligent-systems:latest
 
-Then access: http://localhost:5000
+# Then access: http://localhost:5000
