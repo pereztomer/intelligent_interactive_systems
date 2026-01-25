@@ -1,5 +1,16 @@
 # Docker Deployment Instructions
 
+## Prerequisites
+
+Before running these commands, make sure Docker is installed and running on your machine:
+- **Windows/Mac**: Start Docker Desktop
+- **Linux**: Ensure Docker Engine is running (`sudo systemctl start docker`)
+
+You can verify Docker is running with:
+```bash
+docker --version
+```
+
 ## Running the Application
 
 ### 1. Pull the Image from Docker Hub
