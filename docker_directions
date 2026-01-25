@@ -9,3 +9,5 @@ docker load < app.tar
 
 # Run container
 docker run -p 5000:5000 intelligent-systems
+
+Then access: http://localhost:5000
